@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* src/index.css */
+
+/* src/index.css */
+
+.btn-dark {
+  @apply bg-dark text-white border border-dark font-semibold px-6 py-3 rounded-md transition;
+}
+
+.btn-dark:hover {
+  @apply bg-white text-green-600 border-dark;
+}
