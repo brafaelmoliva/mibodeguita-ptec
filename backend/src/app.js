@@ -1,10 +1,10 @@
-// src/app.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
-const empleadoRoutes = require('./routes/employeeRoutes'); // ← NUEVO
+const empleadoRoutes = require('./routes/employeeRoutes');
+const supplierRoutes = require('./routes/SupplierRoutes'); 
 
 const app = express();
 
@@ -14,8 +14,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Rutas
+// Ruta raíz para probar conexión
+app.get('/', (req, res) => {
+  res.send('API funcionando');
+});
+
+// Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', empleadoRoutes);
+app.use('/api', supplierRoutes);
 
 module.exports = app;
