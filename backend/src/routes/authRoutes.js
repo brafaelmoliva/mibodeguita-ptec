@@ -6,4 +6,5 @@ const authController = require('../controllers/authController');
 router.post('/register', authController.registrarAdmin);
 router.post('/login', authController.login); // ← Aquí
 
+
 module.exports = router;
