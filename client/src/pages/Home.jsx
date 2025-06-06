@@ -6,6 +6,8 @@ import Ajustes from "../components/Ajustes";
 import EmployeeForm from "../components/EmployeeForm";
 import Deudas from "../components/Deudas";            // Importar Deudas
 import Proveedores from "../components/Proveedores"; // Importar Proveedores
+import Categorias from "../components/Categorias";
+
 
 const Home = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -46,6 +48,9 @@ const Home = () => {
         return <Deudas />;
       case "proveedores":
         return <Proveedores />;
+        case "categorias":
+  return <Categorias />;
+
       default:
         return <Dashboard />;
     }
@@ -139,6 +144,19 @@ const Home = () => {
           >
             Proveedores
           </button>
+
+          <button
+  onClick={() => {
+    setActivePage("categorias");
+    setSidebarOpen(false);
+  }}
+  className={`text-left px-3 py-2 rounded w-full ${
+    activePage === "categorias" ? "bg-green-700" : "hover:bg-green-700"
+  }`}
+>
+  Categorías
+</button>
+
 
             <button
             onClick={() => {

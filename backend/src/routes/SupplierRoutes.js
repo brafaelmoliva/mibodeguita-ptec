@@ -1,22 +1,31 @@
-// routes/SupplierRoutes.js
 const express = require('express');
-const pool = require('../config/db'); // ajusta si es necesario
-
+const pool = require('../config/db');
+const authUser = require('../middlewares/authUser'); 
 const router = express.Router();
 
-router.get('/', (req, res) => res.send('API funcionando'));
-
+// Ruta pública sin auth
 router.get('/proveedores', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM proveedor');
-    res.json(rows);
+
+    // Convertimos estado de Buffer a número
+    const proveedores = rows.map(prov => ({
+      ...prov,
+      estado: prov.estado[0]  // <-- igual que en categorias
+    }));
+
+    res.json(proveedores);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener proveedor' });
   }
 });
 
-router.post('/proveedores', async (req, res) => {
-  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, usuario_id } = req.body;
+
+//AGREGAR
+
+router.post('/proveedores', authUser, async (req, res) => {
+  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor } = req.body;
+  const usuarioId = req.user.id_usuario; // <-- Aquí tienes el usuario logueado
 
   try {
     const [result] = await pool.query(
@@ -25,18 +34,11 @@ router.post('/proveedores', async (req, res) => {
       [nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor]
     );
 
-    const proveedorId = result.insertId;
-
+    // Insertar en auditoría
     await pool.query(
       `INSERT INTO Auditoria (tabla_afectada, tipo_operacion, id_registro, descripcion, usuario_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        'proveedor',
-        'INSERT',
-        proveedorId,
-        `Se agregó el proveedor: ${nombre_proveedor}`,
-        usuario_id || null
-      ]
+       VALUES (?, 'INSERT', ?, ?, ?)`,
+      ['proveedor', result.insertId, `Proveedor creado: ${nombre_proveedor}`, usuarioId]
     );
 
     res.sendStatus(201);
@@ -46,9 +48,12 @@ router.post('/proveedores', async (req, res) => {
   }
 });
 
-router.put('/proveedores/:id', async (req, res) => {
+
+//ACTUALIZAR
+router.put('/proveedores/:id', authUser, async (req, res) => {
   const { id } = req.params;
-  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, estado, usuario_id } = req.body;
+  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, estado } = req.body;
+  const usuarioId = req.user.id_usuario;
 
   try {
     await pool.query(
@@ -58,16 +63,11 @@ router.put('/proveedores/:id', async (req, res) => {
       [nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, estado ? 1 : 0, id]
     );
 
+    // Insertar en auditoría
     await pool.query(
       `INSERT INTO Auditoria (tabla_afectada, tipo_operacion, id_registro, descripcion, usuario_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        'proveedor',
-        'UPDATE',
-        id,
-        `Se actualizó el proveedor: ${nombre_proveedor}`,
-        usuario_id || null
-      ]
+       VALUES (?, 'UPDATE', ?, ?, ?)`,
+      ['proveedor', id, `Proveedor actualizado: ${nombre_proveedor}`, usuarioId]
     );
 
     res.send('Proveedor actualizado correctamente');
@@ -75,6 +75,11 @@ router.put('/proveedores/:id', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Error al actualizar proveedor' });
   }
+
+
+
 });
+
+
 
 module.exports = router;
