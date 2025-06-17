@@ -1,42 +1,121 @@
-// routes/SupplierRoutes.js
 const express = require('express');
-const pool = require('../config/db'); // ajusta si es necesario
-
+const pool = require('../config/db');
+const authUser = require('../middlewares/authUser');
+const axios = require('axios');
 const router = express.Router();
 
-router.get('/', (req, res) => res.send('API funcionando'));
-
+// Obtener todos los proveedores (activos e inactivos)
 router.get('/proveedores', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM proveedor');
-    res.json(rows);
+    const [rows] = await pool.query(
+      `SELECT 
+         id_proveedor, ruc, nombre_razon_social, direccion, direccion_completa,
+         estado_sunat, condicion_sunat, departamento, provincia, distrito, ubigeo_sunat,
+         estado_negocio
+       FROM Proveedor`
+    );
+
+    const proveedores = rows.map(prov => ({
+      ...prov,
+      estado_negocio: prov.estado_negocio[0]
+    }));
+
+    res.json(proveedores);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener proveedor' });
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener proveedores' });
   }
 });
 
-router.post('/proveedores', async (req, res) => {
-  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, usuario_id } = req.body;
+// Consultar datos por RUC usando ApiPeruDev
+router.get('/proveedores/ruc/:ruc', async (req, res) => {
+  const { ruc } = req.params;
+  const API_KEY = process.env.APIPERU_API_KEY;
+
+  try {
+    const response = await axios.get(`https://apiperu.dev/api/ruc/${ruc}`, {
+      headers: {
+        Authorization: `Bearer ${API_KEY}`
+      }
+    });
+
+    if (!response.data.success) {
+      return res.status(404).json({ error: 'RUC no encontrado' });
+    }
+
+    const data = response.data.data;
+
+    res.json({
+      ruc: data.ruc,
+      nombre_razon_social: data.nombre_o_razon_social,
+      direccion: data.direccion,
+      direccion_completa: data.direccion_completa,
+      estado_sunat: data.estado,
+      condicion_sunat: data.condicion,
+      departamento: data.departamento,
+      provincia: data.provincia,
+      distrito: data.distrito,
+      ubigeo_sunat: data.ubigeo_sunat
+    });
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: 'Error al consultar ApiPeruDev' });
+  }
+});
+
+// AGREGAR proveedor
+router.post('/proveedores', authUser, async (req, res) => {
+  const {
+    ruc,
+    nombre_razon_social,
+    direccion,
+    direccion_completa,
+    estado_sunat,
+    condicion_sunat,
+    departamento,
+    provincia,
+    distrito,
+    ubigeo_sunat
+  } = req.body;
+
+  const usuarioId = req.user.id_usuario;
 
   try {
     const [result] = await pool.query(
-      `INSERT INTO proveedor (nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor)
-       VALUES (?, ?, ?, ?)`,
-      [nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor]
+      `INSERT INTO Proveedor 
+       (ruc, nombre_razon_social, direccion, direccion_completa, estado_sunat, condicion_sunat,
+        departamento, provincia, distrito, ubigeo_sunat)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        ruc,
+        nombre_razon_social,
+        direccion,
+        direccion_completa,
+        estado_sunat,
+        condicion_sunat,
+        departamento,
+        provincia,
+        distrito,
+        ubigeo_sunat
+      ]
     );
 
-    const proveedorId = result.insertId;
+    const descripcion = `Proveedor creado:
+RUC: ${ruc},
+Razón Social: ${nombre_razon_social},
+Dirección: ${direccion},
+Dirección completa: ${direccion_completa},
+Estado SUNAT: ${estado_sunat},
+Condición SUNAT: ${condicion_sunat},
+Departamento: ${departamento},
+Provincia: ${provincia},
+Distrito: ${distrito},
+Ubigeo SUNAT: ${ubigeo_sunat}`;
 
     await pool.query(
       `INSERT INTO Auditoria (tabla_afectada, tipo_operacion, id_registro, descripcion, usuario_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        'proveedor',
-        'INSERT',
-        proveedorId,
-        `Se agregó el proveedor: ${nombre_proveedor}`,
-        usuario_id || null
-      ]
+       VALUES (?, 'INSERT', ?, ?, ?)`,
+      ['Proveedor', result.insertId, descripcion, usuarioId]
     );
 
     res.sendStatus(201);
@@ -46,28 +125,73 @@ router.post('/proveedores', async (req, res) => {
   }
 });
 
-router.put('/proveedores/:id', async (req, res) => {
+// ACTUALIZAR proveedor
+router.put('/proveedores/:id', authUser, async (req, res) => {
   const { id } = req.params;
-  const { nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, estado, usuario_id } = req.body;
+  const {
+    ruc,
+    nombre_razon_social,
+    direccion,
+    direccion_completa,
+    estado_sunat,
+    condicion_sunat,
+    departamento,
+    provincia,
+    distrito,
+    ubigeo_sunat,
+    estado_negocio
+  } = req.body;
+
+  const usuarioId = req.user.id_usuario;
 
   try {
     await pool.query(
-      `UPDATE proveedor 
-       SET nombre_proveedor = ?, telefono_proveedor = ?, email_proveedor = ?, direccion_proveedor = ?, estado = ?
+      `UPDATE Proveedor SET
+         ruc = ?,
+         nombre_razon_social = ?,
+         direccion = ?,
+         direccion_completa = ?,
+         estado_sunat = ?,
+         condicion_sunat = ?,
+         departamento = ?,
+         provincia = ?,
+         distrito = ?,
+         ubigeo_sunat = ?,
+         estado_negocio = ?
        WHERE id_proveedor = ?`,
-      [nombre_proveedor, telefono_proveedor, email_proveedor, direccion_proveedor, estado ? 1 : 0, id]
+      [
+        ruc,
+        nombre_razon_social,
+        direccion,
+        direccion_completa,
+        estado_sunat,
+        condicion_sunat,
+        departamento,
+        provincia,
+        distrito,
+        ubigeo_sunat,
+        estado_negocio ? 1 : 0,
+        id
+      ]
     );
+
+    const descripcion = `Proveedor actualizado:
+RUC: ${ruc},
+Razón Social: ${nombre_razon_social},
+Dirección: ${direccion},
+Dirección completa: ${direccion_completa},
+Estado SUNAT: ${estado_sunat},
+Condición SUNAT: ${condicion_sunat},
+Departamento: ${departamento},
+Provincia: ${provincia},
+Distrito: ${distrito},
+Ubigeo SUNAT: ${ubigeo_sunat},
+Estado negocio: ${estado_negocio ? 'Activo' : 'Inactivo'}`;
 
     await pool.query(
       `INSERT INTO Auditoria (tabla_afectada, tipo_operacion, id_registro, descripcion, usuario_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        'proveedor',
-        'UPDATE',
-        id,
-        `Se actualizó el proveedor: ${nombre_proveedor}`,
-        usuario_id || null
-      ]
+       VALUES (?, 'UPDATE', ?, ?, ?)`,
+      ['Proveedor', id, descripcion, usuarioId]
     );
 
     res.send('Proveedor actualizado correctamente');
