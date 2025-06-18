@@ -1,0 +1,34 @@
+# Node modules (no subir esta carpeta, es muy pesada)
+node_modules/
+
+# Variables de entorno (credenciales de base de datos, keys, etc)
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Carpetas de build o distribución (si usas TypeScript o Babel)
+dist/
+build/
+
+# Archivos temporales y cachés
+tmp/
+temp/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de editores
+.vscode/
+.idea/
+
+# PID files, seeds, bases de datos locales temporales (si usas)
+*.pid
+*.seed
+*.sqlite
+*.sqlite3
