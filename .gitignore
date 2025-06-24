@@ -1,0 +1,31 @@
+# Archivos de entorno global (pueden existir en raíz)
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Carpetas y archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Editor y entorno de desarrollo
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs generales
+*.log
+
+# Carpetas de build o distribución globales (si existieran)
+dist/
+build/
+
+# Archivos de configuración o cachés globales
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos temporales
+tmp/
+temp/
