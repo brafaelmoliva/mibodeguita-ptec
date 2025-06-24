@@ -6,9 +6,9 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const empleadoRoutes = require('./routes/employeeRoutes'); // ← NUEVO
 const supplierRoutes = require('./routes/SupplierRoutes'); 
-const inputProductsRouter = require('./routes/inputProductRoutes');
-const productRouter = require('./routes/productRoutes')
 const categorieRouter = require('./routes/categoriesRoutes')
+const productoRoutes = require('./routes/productoRoutes');
+
 
 const app = express();
 
@@ -25,8 +25,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', empleadoRoutes);
 app.use('/api', supplierRoutes);
-app.use('/api/ingresos', inputProductsRouter);
-app.use('/api/productos', productRouter);
 app.use('/api/categorias', categorieRouter);
+app.use('/api/productos', productoRoutes);
+
 
 module.exports = app;
