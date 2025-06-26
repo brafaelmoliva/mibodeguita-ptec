@@ -4,10 +4,10 @@ import Gestion from "../components/Gestion";
 import Historial from "../components/Historial";
 import Ajustes from "../components/Ajustes";
 import EmployeeForm from "../components/EmployeeForm";
-import Deudas from "../components/Deudas";            // Importar Deudas
+import Deudas from "../components/Deudas"; // Importar Deudas
 import Proveedores from "../components/Proveedores"; // Importar Proveedores
 import Categorias from "../components/Categorias";
-
+import Entrada from "../components/Entrada";
 
 const Home = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -36,6 +36,8 @@ const Home = () => {
     switch (activePage) {
       case "dashboard":
         return <Dashboard />;
+      case "entrada":
+        return <Entrada />;
       case "gestion":
         return <Gestion />;
       case "historial":
@@ -48,8 +50,8 @@ const Home = () => {
         return <Deudas />;
       case "proveedores":
         return <Proveedores />;
-        case "categorias":
-  return <Categorias />;
+      case "categorias":
+        return <Categorias />;
 
       default:
         return <Dashboard />;
@@ -91,6 +93,18 @@ const Home = () => {
 
           <button
             onClick={() => {
+              setActivePage("entrada");
+              setSidebarOpen(false);
+            }}
+            className={`text-left px-3 py-2 rounded w-full ${
+              activePage === "entrada" ? "bg-green-700" : "hover:bg-green-700"
+            }`}
+          >
+            Entradas
+          </button>
+
+          <button
+            onClick={() => {
               setActivePage("gestion");
               setSidebarOpen(false);
             }}
@@ -113,22 +127,19 @@ const Home = () => {
             Historial
           </button>
 
-        
-
           {/* Mostrar Deudas SOLO si es admin */}
-        
-            <button
-              onClick={() => {
-                setActivePage("deudas");
-                setSidebarOpen(false);
-              }}
-              className={`text-left px-3 py-2 rounded w-full ${
-                activePage === "deudas" ? "bg-green-700" : "hover:bg-green-700"
-              }`}
-            >
-              Deudas
-            </button>
-          
+
+          <button
+            onClick={() => {
+              setActivePage("deudas");
+              setSidebarOpen(false);
+            }}
+            className={`text-left px-3 py-2 rounded w-full ${
+              activePage === "deudas" ? "bg-green-700" : "hover:bg-green-700"
+            }`}
+          >
+            Deudas
+          </button>
 
           {/* Proveedores SIEMPRE visible */}
           <button
@@ -146,19 +157,20 @@ const Home = () => {
           </button>
 
           <button
-  onClick={() => {
-    setActivePage("categorias");
-    setSidebarOpen(false);
-  }}
-  className={`text-left px-3 py-2 rounded w-full ${
-    activePage === "categorias" ? "bg-green-700" : "hover:bg-green-700"
-  }`}
->
-  Categorías
-</button>
+            onClick={() => {
+              setActivePage("categorias");
+              setSidebarOpen(false);
+            }}
+            className={`text-left px-3 py-2 rounded w-full ${
+              activePage === "categorias"
+                ? "bg-green-700"
+                : "hover:bg-green-700"
+            }`}
+          >
+            Categorías
+          </button>
 
-
-            <button
+          <button
             onClick={() => {
               setActivePage("employeeForm");
               setSidebarOpen(false);

@@ -5,13 +5,27 @@ const getProductos = async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT 
-        p.*, 
+        p.id_producto,
+        p.id_proveedor,
+        p.id_categoria,
+        p.nombre_producto,
+        p.descripcion_producto,
+        p.unidad_medida,
+        p.stock,
+        p.stock_min,
+        p.precio,
+        p.costo_compra,
+        p.precio_venta,
+        CAST(p.estado AS UNSIGNED) AS estado,   -- <-- Aquí el cast
+        p.created_at,
+        p.created_by,
+        p.updated_at,
+        p.updated_by,
         c.nombre_categoria, 
         pr.nombre_razon_social AS nombre_proveedor
       FROM Producto p
       JOIN Categoria c ON p.id_categoria = c.id_categoria
       JOIN Proveedor pr ON p.id_proveedor = pr.id_proveedor
-      -- Removido WHERE p.estado = 1 para traer todos
     `);
 
     res.json(rows);
@@ -20,6 +34,7 @@ const getProductos = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener productos' });
   }
 };
+
 
 
 const crearProducto = async (req, res) => {
@@ -75,6 +90,14 @@ const actualizarProducto = async (req, res) => {
   const updatedBy = req.user.id_usuario;
 
   try {
+    // Convertir estado a número (0 o 1) si viene como Buffer
+    let estadoNum;
+    if (Buffer.isBuffer(estado)) {
+      estadoNum = estado[0];
+    } else {
+      estadoNum = estado ? 1 : 0;
+    }
+
     await pool.query(`
       UPDATE Producto SET
         id_proveedor = ?, id_categoria = ?, nombre_producto = ?, descripcion_producto = ?,
@@ -83,7 +106,7 @@ const actualizarProducto = async (req, res) => {
     `, [
       id_proveedor, id_categoria, nombre_producto, descripcion_producto,
       unidad_medida, stock, stock_min, precio, costo_compra, precio_venta,
-      estado ? 1 : 0, updatedBy, id
+      estadoNum, updatedBy, id
     ]);
 
     const descripcion = `Producto actualizado:
@@ -97,6 +120,7 @@ ID: ${id}, Nombre: ${nombre_producto}, Proveedor ID: ${id_proveedor}, Categoría
     res.status(500).json({ error: 'Error al actualizar producto' });
   }
 };
+
 
 module.exports = {
   getProductos,

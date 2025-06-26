@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 const token = localStorage.getItem("token");
 
 const Gestion = () => {
@@ -45,15 +46,39 @@ const Gestion = () => {
   }, []);
 
   const fetchProductos = () => {
-    fetch("http://localhost:3001/api/productos")
-      .then((res) => res.json())
-      .then(setProductos)
-      .catch(() => setError("Error al cargar productos"));
-  };
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setError("No tienes token, inicia sesión");
+    return;
+  }
+
+  fetch("http://localhost:3001/api/productos", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Error al cargar productos");
+      return res.json();
+    })
+    .then((data) => {
+      // Convertir estado Buffer a número
+      const productosNormalizados = data.map((p) => ({
+        ...p,
+        estado:
+          typeof p.estado === "object" && p.estado.data
+            ? p.estado.data[0]
+            : p.estado,
+      }));
+      setProductos(productosNormalizados);
+    })
+    .catch(() => setError("Error al cargar productos"));
+};
+
   const categoriasFiltro = [
     "Bebidas",
     "Abarrotes",
-    "Lácteos",
+    "Lacteos",
     "Limpieza",
     "Snacks",
     "Panadería",
@@ -67,39 +92,58 @@ const Gestion = () => {
     );
   };
 
-  const handleAgregar = () => {
-    setError(null);
-    fetch("http://localhost:3001/api/productos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ✅ Token JWT
-      },
-      body: JSON.stringify(nuevoProducto),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Error al agregar producto");
-        return res.json();
-      })
-      .then(() => {
-        fetchProductos();
-        setShowAddModal(false);
-        setNuevoProducto({
-          id_proveedor: "",
-          id_categoria: "",
-          nombre_producto: "",
-          descripcion_producto: "",
-          stock: "",
-          stock_min: "",
-          unidad_medida: "unidad",
-          costo_compra: "",
-          precio_venta: "",
-          precio: "",
-          estado: 1,
-        });
-      })
-      .catch((err) => setError(err.message));
+const handleAgregar = () => {
+  setError(null);
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setError("No tienes token, inicia sesión");
+    return;
+  }
+
+  // Convertir los campos que deben ser números, si es necesario
+  const productoParaEnviar = {
+    ...nuevoProducto,
+    id_proveedor: Number(nuevoProducto.id_proveedor),
+    id_categoria: Number(nuevoProducto.id_categoria),
+    stock: Number(nuevoProducto.stock),
+    stock_min: Number(nuevoProducto.stock_min),
+    costo_compra: Number(nuevoProducto.costo_compra),
+    precio_venta: Number(nuevoProducto.precio_venta),
+    precio: Number(nuevoProducto.precio),
   };
+
+  fetch("http://localhost:3001/api/productos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(productoParaEnviar),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`Error al agregar producto: ${res.status}`);
+      return res.json();
+    })
+    .then(() => {
+      fetchProductos();
+      setShowAddModal(false);
+      setNuevoProducto({
+        id_proveedor: "",
+        id_categoria: "",
+        nombre_producto: "",
+        descripcion_producto: "",
+        stock: "",
+        stock_min: "",
+        unidad_medida: "unidad",
+        costo_compra: "",
+        precio_venta: "",
+        precio: "",
+        estado: 1,
+      });
+    })
+    .catch((err) => setError(err.message));
+};
 
   const productosFiltrados = productos.filter((prod) => {
     const texto = busqueda.toLowerCase();
@@ -133,42 +177,33 @@ const Gestion = () => {
     productosFiltrados.length / productosPorPagina
   );
 
-  const handleActualizar = () => {
-    setError(null);
+const handleActualizar = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setError("No tienes token, inicia sesión");
+    return;
+  }
 
-    const estadoNumerico =
-      typeof productoEdit.estado === "object"
-        ? productoEdit.estado.data?.[0] ?? 1
-        : Number(productoEdit.estado);
-
-    const productoActualizado = {
-      ...productoEdit,
-      estado: Number(
-        typeof productoEdit.estado === "object"
-          ? productoEdit.estado.data?.[0] ?? 1
-          : productoEdit.estado
-      ),
-    };
-
-    fetch(`http://localhost:3001/api/productos/${productoEdit.id_producto}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ✅ Token JWT
-      },
-      body: JSON.stringify(productoActualizado),
+  fetch(`http://localhost:3001/api/productos/${productoEdit.id_producto}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(productoEdit),  // <-- aquí el cambio
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Error al actualizar producto");
+      return res.text();
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Error al actualizar producto");
-        return res.text();
-      })
-      .then(() => {
-        fetchProductos();
-        setShowEditModal(false);
-        setProductoEdit(null);
-      })
-      .catch((err) => setError(err.message));
-  };
+    .then(() => {
+      fetchProductos();
+      setShowEditModal(false);
+      setProductoEdit(null);
+    })
+    .catch((err) => setError(err.message));
+};
+
 
   return (
     <div>
