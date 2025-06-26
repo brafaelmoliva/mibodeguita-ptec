@@ -14,6 +14,8 @@ const authUser = (req, res, next) => {
 
     // Guarda los datos del usuario (id, es_admin, nombre, etc.)
     req.user = decoded;
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+
 
     next();
   } catch (error) {
