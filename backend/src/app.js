@@ -9,6 +9,8 @@ const categorieRouter = require('./routes/categoriesRoutes')
 const productoRoutes = require('./routes/productoRoutes');
 const entradaRoutes = require('./routes/entradaRoutes'); // ← NUEVO
 const deudasRoutes = require('./routes/deudasRoutes');
+const comprobanteRoutes = require("./routes/comprobanteRoutes");
+const detalleComprobanteRoutes = require('./routes/detalleComprobanteRoutes');
 
 
 
@@ -32,6 +34,10 @@ app.use('/api/categorias', categorieRouter);
 app.use('/api/productos', productoRoutes);
 app.use('/api/entrada-producto', entradaRoutes);
 app.use('/api/deudas', deudasRoutes);
+app.use("/api/comprobantes", comprobanteRoutes);
+app.use('/api/detallecomprobante', detalleComprobanteRoutes);
+
+
 
 
 
