@@ -107,56 +107,59 @@ const Deudas = () => {
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300">
-            <thead className="bg-green-800 text-white">
-              <tr>
-                <th className="px-4 py-2 border border-gray-300">Fecha</th>
-                <th className="px-4 py-2 border border-gray-300">Código</th>
-                <th className="px-4 py-2 border border-gray-300">Proveedor (RUC)</th>
-                <th className="px-4 py-2 border border-gray-300">Monto</th>
-                <th className="px-4 py-2 border border-gray-300">Estado</th>
-                <th className="px-4 py-2 border border-gray-300">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deudasFiltradas.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="text-center py-4 text-gray-500">
-                    No hay datos disponibles.
-                  </td>
-                </tr>
-              ) : (
-                deudasFiltradas.map((deuda) => {
-                  const fecha = deuda.fecha_cancelacion
-                    ? new Date(deuda.fecha_cancelacion).toLocaleDateString()
-                    : '—';
-                  const montoPendiente = Number(deuda.monto_pendiente) || 0;
+           <thead className="bg-green-800 text-white">
+  <tr>
+    <th className="px-4 py-2 border border-gray-300">Fecha</th>
+    <th className="px-4 py-2 border border-gray-300">Código</th>
+    <th className="px-4 py-2 border border-gray-300">Número de factura</th> {/* Nueva columna */}
+    <th className="px-4 py-2 border border-gray-300">Proveedor (RUC)</th>
+    <th className="px-4 py-2 border border-gray-300">Monto</th>
+    <th className="px-4 py-2 border border-gray-300">Estado</th>
+    <th className="px-4 py-2 border border-gray-300">Acciones</th>
+  </tr>
+</thead>
+<tbody>
+  {deudasFiltradas.length === 0 ? (
+    <tr>
+      <td colSpan="7" className="text-center py-4 text-gray-500">
+        No hay datos disponibles.
+      </td>
+    </tr>
+  ) : (
+    deudasFiltradas.map((deuda) => {
+      const fecha = deuda.fecha_cancelacion
+        ? new Date(deuda.fecha_cancelacion).toLocaleDateString()
+        : '—';
+      const montoPendiente = Number(deuda.monto_pendiente) || 0;
 
-                  return (
-                    <tr key={deuda.id_entrada}>
-                      <td className="border px-4 py-2">{fecha}</td>
-                      <td className="border px-4 py-2">{deuda.id_entrada}</td>
-                      <td className="border px-4 py-2">{deuda.ruc_proveedor}</td>
-                      <td className="border px-4 py-2">{montoPendiente.toFixed(2)}</td>
-                      <td className="border px-4 py-2">
-                        {montoPendiente > 0 ? 'Pendiente' : 'Pagada'}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {montoPendiente > 0 ? (
-                          <button
-                            onClick={() => abrirModal(deuda)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            Ver
-                          </button>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+      return (
+        <tr key={deuda.id_entrada}>
+          <td className="border px-4 py-2">{fecha}</td>
+          <td className="border px-4 py-2">{deuda.id_entrada}</td>
+          <td className="border px-4 py-2">{deuda.numero_factura || '—'}</td> {/* Aquí */}
+          <td className="border px-4 py-2">{deuda.ruc_proveedor}</td>
+          <td className="border px-4 py-2">{montoPendiente.toFixed(2)}</td>
+          <td className="border px-4 py-2">
+            {montoPendiente > 0 ? 'Pendiente' : 'Pagada'}
+          </td>
+          <td className="border px-4 py-2">
+            {montoPendiente > 0 ? (
+              <button
+                onClick={() => abrirModal(deuda)}
+                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Ver
+              </button>
+            ) : (
+              <span className="text-gray-400">—</span>
+            )}
+          </td>
+        </tr>
+      );
+    })
+  )}
+</tbody>
+
           </table>
         </div>
       )}

@@ -3,85 +3,134 @@ import React, { useState, useEffect } from "react";
 const token = localStorage.getItem("token");
 
 const Entrada = () => {
-  const [entradas, setEntradas] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [entradas, setEntradas] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false); // Nuevo estado
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState(null);
+  const [detalleEntrada, setDetalleEntrada] = useState(null); // nuevo estado
 
-  const [nuevaEntrada, setNuevaEntrada] = useState({
-    id_producto: "",
-    cantidad_total: "",
-    tipo_entrada: "unidad",
-    unidades_por_paquete: "",
-    cantidad_paquetes: "",
-    productos_por_paquete: "",
-    precio_por_paquete: "",
-    costo_unitario_calculado: "",
-    precio_venta_sugerido: "",
+
+  const verDetallesFactura = (id_entrada) => {
+  fetch(`http://localhost:3001/api/entrada-producto/${id_entrada}`)
+    .then((res) => res.json())
+    .then(setDetalleEntrada)
+    .catch(() => setError("Error al obtener detalles de factura"));
+};
+
+  const [productosEntrada, setProductosEntrada] = useState([
+    {
+      id_producto: "",
+      tipo_entrada: "unidad",
+      cantidad_paquetes: "",
+      productos_por_paquete: "",
+      precio_por_paquete: "",
+      cantidad_total: "",
+      costo_unitario_calculado: "",
+      precio_venta_sugerido: "",
+      observaciones: "",
+    },
+  ]);
+
+  const [datosFactura, setDatosFactura] = useState({
+    numero_factura: "",
     tipo_pago: "contado",
     monto_pagado: "",
-    usuario_id: 1,
-    observaciones: "",
     fecha_cancelacion: "",
+    usuario_id: null, // inicialmente null hasta que se cargue
   });
 
-  const fetchProductos = () => {
-    fetch("http://localhost:3001/api/productos")
-      .then(res => res.json())
-      .then(setProductos)
-      .catch(() => setError("Error al obtener productos"));
-  };
-
-  const fetchEntradas = () => {
-    fetch("http://localhost:3001/api/entrada-producto")
-      .then(res => res.json())
-      .then(setEntradas)
-      .catch(() => setError("Error al obtener entradas"));
-  };
-
+  // Cargar usuario_id desde localStorage cuando el componente monta
   useEffect(() => {
-    fetchProductos();
-    fetchEntradas();
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    if (usuario && usuario.id) {
+      setDatosFactura((prev) => ({ ...prev, usuario_id: usuario.id }));
+    } else {
+      setDatosFactura((prev) => ({ ...prev, usuario_id: 1 })); // fallback a 1 si no hay usuario
+    }
   }, []);
 
   useEffect(() => {
-    const pCount = parseFloat(nuevaEntrada.cantidad_paquetes);
-    const uPerPkg = parseFloat(nuevaEntrada.productos_por_paquete);
-    const pricePkg = parseFloat(nuevaEntrada.precio_por_paquete);
+    fetch("http://localhost:3001/api/productos")
+      .then((res) => res.json())
+      .then(setProductos)
+      .catch(() => setError("Error al obtener productos"));
 
-    if (!isNaN(pCount) && !isNaN(uPerPkg)) {
-      const cantidadTotal = pCount * uPerPkg;
-      const costoUnitario = !isNaN(pricePkg) && uPerPkg ? pricePkg / uPerPkg : 0;
-      const montoTotal = cantidadTotal * costoUnitario;
+    fetch("http://localhost:3001/api/entrada-producto")
+      .then((res) => res.json())
+      .then(setEntradas)
+      .catch(() => setError("Error al obtener entradas"));
+  }, []);
 
-      setNuevaEntrada(prev => ({
-        ...prev,
-        cantidad_total: cantidadTotal.toFixed(2),
-        costo_unitario_calculado: costoUnitario.toFixed(2),
-        monto_pagado: prev.tipo_pago === "contado"
-          ? montoTotal.toFixed(2)
-          : prev.monto_pagado,
-      }));
+  const agregarProductoEntrada = () => {
+    setProductosEntrada([
+      ...productosEntrada,
+      {
+        id_producto: "",
+        tipo_entrada: "unidad",
+        cantidad_paquetes: "",
+        productos_por_paquete: "",
+        precio_por_paquete: "",
+        cantidad_total: "",
+        costo_unitario_calculado: "",
+        precio_venta_sugerido: "",
+        observaciones: "",
+      },
+    ]);
+  };
+
+  const actualizarProducto = (index, campo, valor) => {
+    const actualizados = [...productosEntrada];
+    actualizados[index][campo] = valor;
+
+    const p = parseFloat(actualizados[index].productos_por_paquete);
+    const c = parseFloat(actualizados[index].cantidad_paquetes);
+    const precio = parseFloat(actualizados[index].precio_por_paquete);
+
+    if (!isNaN(p) && !isNaN(c)) {
+      const cantidad_total = p * c;
+      actualizados[index].cantidad_total = cantidad_total.toFixed(2);
+      actualizados[index].costo_unitario_calculado = !isNaN(precio)
+        ? (precio / p).toFixed(2)
+        : "0";
+    } else {
+      actualizados[index].cantidad_total = "";
+      actualizados[index].costo_unitario_calculado = "";
     }
-  }, [
-    nuevaEntrada.cantidad_paquetes,
-    nuevaEntrada.productos_por_paquete,
-    nuevaEntrada.precio_por_paquete,
-    nuevaEntrada.tipo_pago
-  ]);
 
-  const handleRegistrarEntrada = () => {
-    const monto_total = parseFloat(nuevaEntrada.cantidad_total) * parseFloat(nuevaEntrada.costo_unitario_calculado);
+    setProductosEntrada(actualizados);
+  };
 
-    if (nuevaEntrada.tipo_pago === "contado") {
-      nuevaEntrada.monto_pagado = monto_total.toFixed(2);
-      nuevaEntrada.fecha_cancelacion = null;
-    }
+  const handleRegistrarFactura = () => {
+    const productosConMontos = productosEntrada.map((p) => {
+      const cantidad = parseFloat(p.cantidad_total || 0);
+      const costo = parseFloat(p.costo_unitario_calculado || 0);
+      return {
+        ...p,
+        cantidad_total: cantidad,
+        costo_unitario_calculado: costo,
+        monto_total: (cantidad * costo).toFixed(2),
+      };
+    });
+
+    let montoTotalFactura = productosConMontos.reduce(
+      (acc, p) => acc + parseFloat(p.monto_total),
+      0
+    );
 
     const datos = {
-      ...nuevaEntrada,
-      monto_total: monto_total.toFixed(2),
+      productos: productosConMontos,
+      numero_factura: datosFactura.numero_factura,
+      tipo_pago: datosFactura.tipo_pago,
+      monto_pagado:
+        datosFactura.tipo_pago === "contado"
+          ? montoTotalFactura.toFixed(2)
+          : datosFactura.monto_pagado,
+      fecha_cancelacion:
+        datosFactura.tipo_pago === "credito"
+          ? datosFactura.fecha_cancelacion
+          : null,
+      usuario_id: datosFactura.usuario_id,
     };
 
     fetch("http://localhost:3001/api/entrada-producto", {
@@ -92,33 +141,46 @@ const Entrada = () => {
       },
       body: JSON.stringify(datos),
     })
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("Error al registrar entrada");
         return res.json();
       })
       .then(() => {
-        fetchEntradas();
         setShowAddModal(false);
         setShowConfirmModal(false);
-        setNuevaEntrada({
-          id_producto: "",
-          cantidad_total: "",
-          tipo_entrada: "unidad",
-          unidades_por_paquete: "",
-          cantidad_paquetes: "",
-          productos_por_paquete: "",
-          precio_por_paquete: "",
-          costo_unitario_calculado: "",
-          precio_venta_sugerido: "",
+        setProductosEntrada([
+          {
+            id_producto: "",
+            tipo_entrada: "unidad",
+            cantidad_paquetes: "",
+            productos_por_paquete: "",
+            precio_por_paquete: "",
+            cantidad_total: "",
+            costo_unitario_calculado: "",
+            precio_venta_sugerido: "",
+            observaciones: "",
+          },
+        ]);
+        setDatosFactura({
+          numero_factura: "",
           tipo_pago: "contado",
           monto_pagado: "",
-          usuario_id: 1,
-          observaciones: "",
           fecha_cancelacion: "",
+          usuario_id: datosFactura.usuario_id, // conservar usuario_id actual
         });
+        // Refrescar entradas
+        fetch("http://localhost:3001/api/entrada-producto")
+          .then((res) => res.json())
+          .then(setEntradas)
+          .catch(() => setError("Error al obtener entradas"));
       })
-      .catch(err => setError(err.message));
+      .catch((err) => setError(err.message));
   };
+
+  const formatoMoneda = (valor) => {
+  if (valor === undefined || valor === null || isNaN(Number(valor))) return "-";
+  return Number(valor).toFixed(2);
+};
 
   return (
     <div>
@@ -128,137 +190,294 @@ const Entrada = () => {
         className="mb-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
         onClick={() => setShowAddModal(true)}
       >
-        Ingresar Entrada
+        Nueva Entrada (Factura)
       </button>
 
       {error && <p className="text-red-500 mb-4">Error: {error}</p>}
-
-      <table className="w-full border mt-4 text-left text-sm">
-        <thead className="bg-green-100 text-xs uppercase">
-          <tr>
-            <th className="p-2">Producto</th>
-            <th className="p-2">Cantidad</th>
-            <th className="p-2">Total</th>
-            <th className="p-2">Paquetes</th>
-            <th className="p-2">Unid/Paquete</th>
-            <th className="p-2">Precio x Paquete</th>
-            <th className="p-2">Costo Unitario</th>
-            <th className="p-2">Precio Venta</th>
-            <th className="p-2">Pagado</th>
-            <th className="p-2">Pendiente</th>
-            <th className="p-2">Fecha Cancelación</th>
-            <th className="p-2">Fecha Pago</th>
-            <th className="p-2">Fecha Entrada</th>
-            <th className="p-2">Obs.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entradas.length === 0 ? (
-            <tr>
-              <td colSpan="14" className="text-center py-4 text-gray-500">
-                No hay registros de entradas
-              </td>
-            </tr>
-          ) : (
-            entradas.map(entrada => (
-              <tr key={entrada.id_entrada} className="hover:bg-gray-50">
-                <td className="p-2">{entrada.nombre_producto}</td>
-                <td className="p-2">{entrada.cantidad_total}</td>
-                <td className="p-2">S/ {entrada.monto_total}</td>
-                <td className="p-2">{entrada.cantidad_paquetes || "-"}</td>
-                <td className="p-2">{entrada.productos_por_paquete || "-"}</td>
-                <td className="p-2">
-                  {entrada.precio_por_paquete ? `S/ ${entrada.precio_por_paquete}` : "-"}
-                </td>
-                <td className="p-2">S/ {entrada.costo_unitario_calculado}</td>
-                <td className="p-2">S/ {entrada.precio_venta_sugerido}</td>
-                <td className="p-2">S/ {entrada.monto_pagado}</td>
-                <td className="p-2">S/ {entrada.monto_pendiente}</td>
-                <td className="p-2">{entrada.fecha_cancelacion ? entrada.fecha_cancelacion.split("T")[0] : "-"}</td>
-                <td className="p-2">{entrada.fecha_pago ? entrada.fecha_pago.split("T")[0] : "-"}</td>
-                <td className="p-2">{entrada.fecha_entrada ? entrada.fecha_entrada.split("T")[0] : "-"}</td>
-                <td className="p-2">{entrada.observaciones ? <span title={entrada.observaciones}>🛈</span> : "-"}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-10">
-          <div className="bg-white p-6 rounded shadow-md w-96">
-            <h3 className="text-xl font-semibold mb-4">Registrar Entrada</h3>
-
-            <select
-              className="w-full border mb-2 px-3 py-2 rounded"
-              value={nuevaEntrada.id_producto}
-              onChange={e => setNuevaEntrada({ ...nuevaEntrada, id_producto: e.target.value })}
+{/* Tabla de facturas (resumen) */}
+<table className="w-full border mt-4 text-left text-sm">
+  <thead className="bg-green-100 text-xs uppercase">
+    <tr>
+      <th className="p-2">Factura</th>
+      <th className="p-2">Fecha</th>
+      <th className="p-2">Pagado</th>
+      <th className="p-2">Pendiente</th>
+      <th className="p-2">Estado</th>
+      <th className="p-2">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {entradas.length === 0 ? (
+      <tr>
+        <td colSpan="6" className="text-center py-4 text-gray-500">
+          No hay registros de entradas
+        </td>
+      </tr>
+    ) : (
+      entradas.map((entrada) => (
+        <tr key={entrada.id_entrada} className="hover:bg-gray-50">
+          <td className="p-2">{entrada.numero_factura}</td>
+          <td className="p-2">{entrada.fecha_entrada?.split("T")[0]}</td>
+          <td className="p-2">S/ {formatoMoneda(entrada.monto_pagado)}</td>
+          <td className="p-2">S/ {formatoMoneda(entrada.monto_pendiente)}</td>
+          <td className="p-2">{entrada.esta_cancelado ? "Cancelado" : "Pendiente"}</td>
+          <td className="p-2">
+            <button
+              onClick={() => verDetallesFactura(entrada.id_entrada)}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
             >
-              <option value="">Seleccionar Producto</option>
-              {productos.map(p => (
-                <option key={p.id_producto} value={p.id_producto}>
-                  {p.nombre_producto}
-                </option>
-              ))}
-            </select>
+              Ver detalles
+            </button>
+          </td>
+        </tr>
+      ))
+    )}
+  </tbody>
+</table>
+{detalleEntrada && (
+  <div className="mt-6 p-4 border rounded bg-gray-50">
+    <h3 className="text-xl font-semibold mb-4">
+      Detalles de Factura: {detalleEntrada.numero_factura}
+    </h3>
+    <p><strong>Registrado por:</strong> {detalleEntrada.registrado_por}</p>
+    <p><strong>Fecha:</strong> {detalleEntrada.fecha_entrada?.split("T")[0]}</p>
+    <p><strong>Estado:</strong> {detalleEntrada.esta_cancelado ? "Cancelado" : "Pendiente"}</p>
+    <p><strong>Monto Pagado:</strong> S/ {formatoMoneda(detalleEntrada.monto_pagado)}</p>
+    <p><strong>Monto Pendiente:</strong> S/ {formatoMoneda(detalleEntrada.monto_pendiente)}</p>
 
-            <input type="number" placeholder="Cantidad Total" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.cantidad_total} readOnly />
+    <h4 className="mt-4 font-semibold">Productos incluidos:</h4>
+    <table className="w-full text-sm mt-2 border">
+      <thead>
+        <tr>
+          <th className="p-2">Producto</th>
+          <th className="p-2">Cantidad</th>
+          <th className="p-2">Precio x Paquete</th>
+          <th className="p-2">Costo Unitario</th>
+          <th className="p-2">Precio Venta</th>
+          <th className="p-2">Monto Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {detalleEntrada.productos.map((p, idx) => (
+          <tr key={idx}>
+            <td className="p-2">{p.nombre_producto}</td>
+            <td className="p-2">{p.cantidad_total}</td>
+            <td className="p-2">S/ {formatoMoneda(p.precio_por_paquete)}</td>
+            <td className="p-2">S/ {formatoMoneda(p.costo_unitario_calculado)}</td>
+            <td className="p-2">S/ {formatoMoneda(p.precio_venta_sugerido)}</td>
+            <td className="p-2">S/ {formatoMoneda(p.monto_total)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
 
-            <select className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.tipo_entrada} onChange={e => setNuevaEntrada({ ...nuevaEntrada, tipo_entrada: e.target.value })}>
-              <option value="unidad">Unidad</option>
-              <option value="kg">Kilogramos</option>
-              <option value="litro">Litros</option>
-            </select>
+    <button
+      onClick={() => setDetalleEntrada(null)}
+      className="mt-4 bg-red-600 text-white px-4 py-2 rounded"
+    >
+      Cerrar detalles
+    </button>
+  </div>
+)}
 
-            <input type="number" placeholder="Productos por Paquete" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.productos_por_paquete} onChange={e => setNuevaEntrada({ ...nuevaEntrada, productos_por_paquete: e.target.value })} />
 
-            <input type="number" placeholder="Cantidad de Paquetes" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.cantidad_paquetes} onChange={e => setNuevaEntrada({ ...nuevaEntrada, cantidad_paquetes: e.target.value })} />
 
-            <input type="number" step="0.01" placeholder="Precio por Paquete" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.precio_por_paquete} onChange={e => setNuevaEntrada({ ...nuevaEntrada, precio_por_paquete: e.target.value })} />
+      {/* Modal para agregar factura */}
+      {showAddModal && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 z-10 overflow-y-scroll">
+    <div className="bg-white p-6 rounded shadow-md w-[40%] max-w-4xl mr-4">
+            <h3 className="text-xl font-bold mb-4">Registrar Factura de Entrada</h3>
 
-            <input type="number" placeholder="Costo Unitario" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.costo_unitario_calculado} readOnly />
+            {/* Input número factura */}
+            <input
+              type="text"
+              placeholder="Número de Factura"
+              className="border px-3 py-2 rounded mb-4 w-full"
+              value={datosFactura.numero_factura}
+              onChange={(e) =>
+                setDatosFactura({ ...datosFactura, numero_factura: e.target.value })
+              }
+            />
 
-            <input type="number" placeholder="Precio Venta" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.precio_venta_sugerido} onChange={e => setNuevaEntrada({ ...nuevaEntrada, precio_venta_sugerido: e.target.value })} />
+            {productosEntrada.map((p, i) => (
+              <div
+                key={i}
+                className="mb-4 p-4 border rounded bg-gray-50 space-y-2"
+              >
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={p.id_producto}
+                  onChange={(e) =>
+                    actualizarProducto(i, "id_producto", e.target.value)
+                  }
+                >
+                  <option value="">Seleccionar producto</option>
+                  {productos.map((prod) => (
+                    <option key={prod.id_producto} value={prod.id_producto}>
+                      {prod.nombre_producto}
+                    </option>
+                  ))}
+                </select>
 
-            <div className="mb-4">
-              <span className="mr-4 font-semibold">Tipo de Pago:</span>
-              <label className="mr-4">
-                <input type="radio" name="tipo_pago" value="contado" checked={nuevaEntrada.tipo_pago === "contado"} onChange={() => setNuevaEntrada({ ...nuevaEntrada, tipo_pago: "contado" })} /> Contado
-              </label>
-              <label>
-                <input type="radio" name="tipo_pago" value="credito" checked={nuevaEntrada.tipo_pago === "credito"} onChange={() => setNuevaEntrada({ ...nuevaEntrada, tipo_pago: "credito" })} /> Crédito
-              </label>
-            </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    placeholder="Productos por Paquete"
+                    className="border px-3 py-2 rounded"
+                    value={p.productos_por_paquete}
+                    onChange={(e) =>
+                      actualizarProducto(i, "productos_por_paquete", e.target.value)
+                    }
+                  />
+                  <input
+                    type="number"
+                    placeholder="Cantidad de Paquetes"
+                    className="border px-3 py-2 rounded"
+                    value={p.cantidad_paquetes}
+                    onChange={(e) =>
+                      actualizarProducto(i, "cantidad_paquetes", e.target.value)
+                    }
+                  />
+                  <input
+                    type="number"
+                    placeholder="Precio por Paquete"
+                    className="border px-3 py-2 rounded"
+                    value={p.precio_por_paquete}
+                    onChange={(e) =>
+                      actualizarProducto(i, "precio_por_paquete", e.target.value)
+                    }
+                  />
+                  <input
+                    type="number"
+                    placeholder="Precio Venta"
+                    className="border px-3 py-2 rounded"
+                    value={p.precio_venta_sugerido}
+                    onChange={(e) =>
+                      actualizarProducto(i, "precio_venta_sugerido", e.target.value)
+                    }
+                  />
+                  <input
+                    type="text"
+                    placeholder="Observaciones"
+                    className="col-span-2 border px-3 py-2 rounded"
+                    value={p.observaciones}
+                    onChange={(e) =>
+                      actualizarProducto(i, "observaciones", e.target.value)
+                    }
+                  />
+                </div>
 
-            {nuevaEntrada.tipo_pago === "credito" && (
-              <>
-                <input type="number" placeholder="Monto Pagado" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.monto_pagado} onChange={e => setNuevaEntrada({ ...nuevaEntrada, monto_pagado: e.target.value })} />
-                <input type="date" className="w-full border mb-2 px-3 py-2 rounded" value={nuevaEntrada.fecha_cancelacion} onChange={e => setNuevaEntrada({ ...nuevaEntrada, fecha_cancelacion: e.target.value })} />
-              </>
-            )}
+                <p className="text-sm text-gray-600 mt-2">
+                  Total: <strong>{p.cantidad_total || 0}</strong> unidades — Costo unitario:{" "}
+                  <strong>S/ {p.costo_unitario_calculado || 0}</strong>
+                </p>
+              </div>
+            ))}
 
-            <textarea placeholder="Observaciones (opcional)" className="w-full border mb-4 px-3 py-2 rounded" value={nuevaEntrada.observaciones} onChange={e => setNuevaEntrada({ ...nuevaEntrada, observaciones: e.target.value })} />
+            <button
+              onClick={agregarProductoEntrada}
+              className="mb-4 px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              + Agregar otro producto
+            </button>
 
-            <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 border rounded" onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={() => setShowConfirmModal(true)}>Guardar</button>
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-md font-semibold mb-2">Información de Factura</h4>
+              <div className="flex flex-wrap gap-4 items-center">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="tipo_pago"
+                    value="contado"
+                    checked={datosFactura.tipo_pago === "contado"}
+                    onChange={() =>
+                      setDatosFactura({
+                        ...datosFactura,
+                        tipo_pago: "contado",
+                        monto_pagado: "",
+                        fecha_cancelacion: "",
+                      })
+                    }
+                  />
+                  <span>Contado</span>
+                </label>
+
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="tipo_pago"
+                    value="credito"
+                    checked={datosFactura.tipo_pago === "credito"}
+                    onChange={() =>
+                      setDatosFactura({ ...datosFactura, tipo_pago: "credito" })
+                    }
+                  />
+                  <span>Crédito</span>
+                </label>
+
+                {datosFactura.tipo_pago === "credito" && (
+                  <>
+                    <input
+                      type="number"
+                      placeholder="Monto Pagado"
+                      className="border px-3 py-2 rounded"
+                      value={datosFactura.monto_pagado}
+                      onChange={(e) =>
+                        setDatosFactura({ ...datosFactura, monto_pagado: e.target.value })
+                      }
+                    />
+                    <input
+                      type="date"
+                      className="border px-3 py-2 rounded"
+                      value={datosFactura.fecha_cancelacion}
+                      onChange={(e) =>
+                        setDatosFactura({ ...datosFactura, fecha_cancelacion: e.target.value })
+                      }
+                    />
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowConfirmModal(true);
+                }}
+                className="mt-4 px-6 py-2 bg-green-700 text-white rounded hover:bg-green-800"
+              >
+                Confirmar Factura
+              </button>
+
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="ml-4 mt-4 px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Confirmación */}
+      {/* Modal de confirmación */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20">
-          <div className="bg-white p-6 rounded shadow-md w-96">
-            <h3 className="text-lg font-bold mb-4 text-yellow-600">⚠️ Confirmar Registro</h3>
-            <p className="mb-4 text-sm text-gray-700">
-              ¿Estás seguro de registrar esta entrada de producto?<br />
-              <strong>No se podrá modificar después.</strong>
-            </p>
-            <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 border rounded" onClick={() => setShowConfirmModal(false)}>Cancelar</button>
-              <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={handleRegistrarEntrada}>Confirmar</button>
+          <div className="bg-white p-6 rounded shadow-md max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Confirmar Registro</h3>
+            <p>¿Estás seguro que deseas registrar esta factura con los productos ingresados? RECUERDA QUE NO PODRAS MODIFICARLO MAS ADELANTE</p>
+
+            <div className="mt-6 flex justify-end space-x-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRegistrarFactura}
+                className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </div>

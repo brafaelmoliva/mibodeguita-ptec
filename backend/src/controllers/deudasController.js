@@ -14,29 +14,39 @@ const getDeudas = async (req, res) => {
   }
 };
 
-
 // Marcar deuda como pagada
 const pagarDeuda = async (req, res) => {
   const { id } = req.params; // id_entrada
   const usuarioId = req.user.id_usuario;
 
   try {
-    const sqlUpdate = `
+    // Obtener el monto total sumado de DetalleEntradaProducto para esta entrada
+    const [[{ total }]] = await pool.query(`
+      SELECT SUM(monto_total) AS total
+      FROM DetalleEntradaProducto
+      WHERE id_entrada = ?
+    `, [id]);
+
+    if (!total) {
+      return res.status(404).json({ error: 'Deuda no encontrada o sin detalles' });
+    }
+
+    // Actualizar EntradaProducto con monto_pagado igual al total calculado y marcar como pagada
+    const [result] = await pool.query(`
       UPDATE EntradaProducto 
       SET 
         fecha_pago = NOW(),
         esta_cancelado = TRUE,
         monto_pendiente = 0,
-        monto_pagado = monto_total
+        monto_pagado = ?
       WHERE id_entrada = ?
-    `;
-
-    const [result] = await pool.query(sqlUpdate, [id]);
+    `, [total, id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Deuda no encontrada' });
     }
 
+    // Registrar auditoría
     const descripcion = `Deuda marcada como pagada para id_entrada ${id}`;
     await registrarAuditoria('EntradaProducto', 'UPDATE', id, descripcion, usuarioId);
 

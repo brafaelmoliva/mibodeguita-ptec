@@ -2,16 +2,13 @@ const pool = require('../config/db');
 const { registrarAuditoria } = require('../utils/auditoriaUtil');
 
 const registrarEntradaProducto = async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    let {
-      id_producto,
-      cantidad_total,
-      tipo_entrada,
-      cantidad_paquetes,
-      productos_por_paquete,
-      precio_por_paquete,
-      costo_unitario_calculado,
-      precio_venta_sugerido,
+    await connection.beginTransaction();
+
+    const {
+      productos, // array de productos [{ id_producto, tipo_entrada, cantidad_total, ... }]
+      numero_factura,
       tipo_pago,
       monto_pagado,
       fecha_cancelacion,
@@ -19,54 +16,45 @@ const registrarEntradaProducto = async (req, res) => {
       observaciones
     } = req.body;
 
-    // 🔄 Recalcular con datos de paquete por seguridad
-    if (cantidad_paquetes && productos_por_paquete && precio_por_paquete) {
-      const recalculadoCantidad = cantidad_paquetes * productos_por_paquete;
-      const recalculadoCosto = precio_por_paquete / productos_por_paquete;
-      cantidad_total = recalculadoCantidad;
-      costo_unitario_calculado = recalculadoCosto.toFixed(2);
-    }
-
-    const monto_total = cantidad_total * costo_unitario_calculado;
-
     let esta_cancelado = true;
-    let monto_pendiente = 0;
+    let monto_total = 0;
     let fecha_pago = null;
+    let monto_pendiente = 0;
+
+    // Calcular total
+    for (const p of productos) {
+      const recalculadoCantidad = p.cantidad_paquetes && p.productos_por_paquete
+        ? p.cantidad_paquetes * p.productos_por_paquete
+        : p.cantidad_total;
+
+      const recalculadoCostoUnitario = p.precio_por_paquete && p.productos_por_paquete
+        ? p.precio_por_paquete / p.productos_por_paquete
+        : p.costo_unitario_calculado;
+
+      const montoParcial = recalculadoCantidad * recalculadoCostoUnitario;
+      monto_total += montoParcial;
+    }
 
     if (tipo_pago === "contado") {
       esta_cancelado = true;
       monto_pendiente = 0;
       fecha_pago = new Date();
-      monto_pagado = monto_total;
-      fecha_cancelacion = null;
     } else if (tipo_pago === "credito") {
       esta_cancelado = false;
-      monto_pendiente = monto_total - monto_pagado;
+      monto_pendiente = monto_total - parseFloat(monto_pagado);
     } else {
       return res.status(400).json({ error: "Tipo de pago inválido" });
     }
 
-    // 🟢 Insertar entrada de producto
-    const [result] = await pool.query(`
+    // 1. Insertar en EntradaProducto
+    const [entradaResult] = await connection.query(`
       INSERT INTO EntradaProducto (
-        id_producto, cantidad_total, tipo_entrada,
-        cantidad_paquetes, productos_por_paquete,
-        precio_por_paquete, costo_unitario_calculado,
-        precio_venta_sugerido, esta_cancelado,
-        monto_total, monto_pagado, monto_pendiente,
+        numero_factura, esta_cancelado, monto_pagado, monto_pendiente,
         fecha_cancelacion, fecha_pago, usuario_id, observaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      id_producto,
-      cantidad_total,
-      tipo_entrada,
-      cantidad_paquetes || null,
-      productos_por_paquete || null,
-      precio_por_paquete || null,
-      costo_unitario_calculado,
-      precio_venta_sugerido,
+      numero_factura,
       esta_cancelado,
-      monto_total,
       monto_pagado,
       monto_pendiente,
       fecha_cancelacion || null,
@@ -75,67 +63,136 @@ const registrarEntradaProducto = async (req, res) => {
       observaciones || null
     ]);
 
-    // 🟢 Actualizar producto
-    await pool.query(`
-      UPDATE Producto
-      SET stock = stock + ?,
-          costo_compra = ?,
-          precio_venta = ?
-      WHERE id_producto = ?
-    `, [
-      cantidad_total,
-      costo_unitario_calculado,
-      precio_venta_sugerido,
-      id_producto
-    ]);
+    const id_entrada = entradaResult.insertId;
 
-    // 🟢 Obtener nombre del producto para la auditoría
-    const [[producto]] = await pool.query(`
-      SELECT nombre_producto FROM Producto WHERE id_producto = ?
-    `, [id_producto]);
+    // 2. Insertar detalles y actualizar stock
+    for (const p of productos) {
+      const cantidad_total = p.cantidad_paquetes && p.productos_por_paquete
+        ? p.cantidad_paquetes * p.productos_por_paquete
+        : p.cantidad_total;
 
-    const descripcion = `
-Entrada registrada:
-- Producto: ${producto.nombre_producto} (ID: ${id_producto})
-- Cantidad total: ${cantidad_total} ${tipo_entrada}
-- Paquetes: ${cantidad_paquetes || '-'}
-- Productos/Paquete: ${productos_por_paquete || '-'}
-- Precio/Paquete: S/ ${precio_por_paquete || '-'}
-- Costo unitario: S/ ${costo_unitario_calculado}
-- Precio venta sugerido: S/ ${precio_venta_sugerido}
-- Tipo de pago: ${tipo_pago}
-- Monto total: S/ ${monto_total.toFixed(2)}
-- Monto pagado: S/ ${monto_pagado}
-- Pendiente: S/ ${monto_pendiente}
-- Observaciones: ${observaciones || 'Ninguna'}
-`.trim();
+      const costo_unitario = p.precio_por_paquete && p.productos_por_paquete
+        ? p.precio_por_paquete / p.productos_por_paquete
+        : p.costo_unitario_calculado;
 
-    await registrarAuditoria('EntradaProducto', 'INSERT', result.insertId, descripcion, usuario_id);
+      const monto_total_detalle = cantidad_total * costo_unitario;
 
-    res.json({ message: "Entrada registrada, producto actualizado y auditoría guardada" });
+      await connection.query(`
+        INSERT INTO DetalleEntradaProducto (
+          id_entrada, id_producto, tipo_entrada, cantidad_total,
+          cantidad_paquetes, productos_por_paquete, precio_por_paquete,
+          monto_total, costo_unitario_calculado, precio_venta_sugerido
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        id_entrada,
+        p.id_producto,
+        p.tipo_entrada || 'unidad',
+        cantidad_total,
+        p.cantidad_paquetes || null,
+        p.productos_por_paquete || null,
+        p.precio_por_paquete || null,
+        monto_total_detalle,
+        costo_unitario.toFixed(2),
+        p.precio_venta_sugerido
+      ]);
+
+      // Actualizar stock y precios del producto
+      await connection.query(`
+        UPDATE Producto
+        SET stock = stock + ?, costo_compra = ?, precio_venta = ?
+        WHERE id_producto = ?
+      `, [
+        cantidad_total,
+        costo_unitario,
+        p.precio_venta_sugerido,
+        p.id_producto
+      ]);
+    }
+
+    // Auditoría
+    await registrarAuditoria(
+      'EntradaProducto',
+      'INSERT',
+      id_entrada,
+      `Entrada registrada con ${productos.length} productos, factura: ${numero_factura}, total: S/ ${monto_total.toFixed(2)}`,
+      usuario_id
+    );
+
+    await connection.commit();
+
+    res.json({ message: "Entrada registrada exitosamente" });
 
   } catch (error) {
-    console.error("❌ Error al registrar entrada de producto:", error.stack);
+    await connection.rollback();
+    console.error("❌ Error al registrar entrada de producto:", error);
     res.status(500).json({ error: "Error interno del servidor" });
+  } finally {
+    connection.release();
   }
 };
 
 const obtenerEntradasProducto = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT ep.*, p.nombre_producto, p.descripcion_producto
+    const [entradas] = await pool.query(`
+      SELECT ep.*, u.nombre_completo AS registrado_por
       FROM EntradaProducto ep
-      JOIN Producto p ON ep.id_producto = p.id_producto
+      LEFT JOIN Usuario u ON ep.usuario_id = u.id_usuario
       ORDER BY ep.fecha_entrada DESC
     `);
-    res.json(rows);
+
+    const [detalles] = await pool.query(`
+      SELECT dp.*, p.nombre_producto
+      FROM DetalleEntradaProducto dp
+      JOIN Producto p ON dp.id_producto = p.id_producto
+    `);
+
+    const entradasConDetalles = entradas.map(ep => ({
+      ...ep,
+      productos: detalles.filter(d => d.id_entrada === ep.id_entrada)
+    }));
+
+    res.json(entradasConDetalles);
+
   } catch (error) {
-    console.error("❌ Error al obtener entradas de producto:", error.stack);
+    console.error("❌ Error al obtener entradas de producto:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
+const obtenerEntradaPorId = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [entrada] = await pool.query(
+      `SELECT ep.*, u.nombre_completo AS registrado_por
+       FROM EntradaProducto ep
+       LEFT JOIN Usuario u ON ep.usuario_id = u.id_usuario
+       WHERE ep.id_entrada = ?`,
+      [id]
+    );
+
+    if (entrada.length === 0) {
+      return res.status(404).json({ error: "Entrada no encontrada" });
+    }
+
+    const [productos] = await pool.query(
+      `SELECT dep.*, p.nombre_producto
+       FROM DetalleEntradaProducto dep
+       JOIN Producto p ON dep.id_producto = p.id_producto
+       WHERE dep.id_entrada = ?`,
+      [id]
+    );
+
+    res.json({ ...entrada[0], productos });
+  } catch (error) {
+    console.error("❌ Error al obtener detalles de entrada:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
 module.exports = {
   registrarEntradaProducto,
-  obtenerEntradasProducto
+  obtenerEntradasProducto,
+  obtenerEntradaPorId
 };

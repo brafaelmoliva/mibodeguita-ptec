@@ -8,7 +8,6 @@ import Deudas from "../components/Deudas"; // Importar Deudas
 import Proveedores from "../components/Proveedores"; // Importar Proveedores
 import Categorias from "../components/Categorias";
 import Entrada from "../components/Entrada";
-import Comprobante from "../components/Comprobante";
 
 const Home = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -39,8 +38,6 @@ const Home = () => {
         return <Dashboard />;
       case "entrada":
         return <Entrada />;
-      case "comprobante":
-        return <Comprobante />;
       case "gestion":
         return <Gestion />;
       case "historial":
@@ -94,19 +91,7 @@ const Home = () => {
             Dashboard
           </button>
 
-          <button
-            onClick={() => {
-              setActivePage("comprobante");
-              setSidebarOpen(false);
-            }}
-            className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "comprobante"
-                ? "bg-green-700"
-                : "hover:bg-green-700"
-            }`}
-          >
-            Comprobantes
-          </button>
+        
 
           <button
             onClick={() => {
@@ -210,7 +195,7 @@ const Home = () => {
               activePage === "ajustes" ? "bg-green-700" : "hover:bg-green-700"
             }`}
           >
-            Ajustes
+            Ajustes y soporte
           </button>
         </nav>
 
