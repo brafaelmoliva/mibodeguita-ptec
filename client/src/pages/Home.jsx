@@ -195,7 +195,7 @@ const Home = () => {
               activePage === "ajustes" ? "bg-green-700" : "hover:bg-green-700"
             }`}
           >
-            Ajustes y soporte
+            Ajustes, soporte y Preguntas Frecuentes
           </button>
         </nav>
 

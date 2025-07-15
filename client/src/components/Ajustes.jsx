@@ -1,11 +1,55 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+const faqs = [
+  {
+    pregunta: "¿Cómo registro un nuevo proveedor?",
+    respuesta:
+      'Puedes registrar proveedores desde la sección "Proveedores" haciendo clic en "Agregar Proveedor".',
+  },
+  {
+    pregunta: "¿Cómo registro una nueva categoría?",
+    respuesta:
+      'Puedes registrar categorías desde la sección "Categorías" haciendo clic en "Agregar Categoría".',
+  },
+  {
+    pregunta: "¿Cómo registro un nuevo producto?",
+    respuesta:
+      'Puedes registrar productos desde la sección “Gestión” haciendo clic en “Agregar producto”. Recuerda que debes haber registrado una Categoría y un Proveedor antes.',
+  },
+  {
+    pregunta: "¿Cómo registro una nueva entrada de producto?",
+    respuesta:
+      'Puedes registrar entradas desde la sección "Entradas" haciendo clic en “Nueva Entrada". Recuerda que debes haber registrado un producto antes.',
+  },
+  {
+    pregunta: "¿Cómo marco una deuda como pagada?",
+    respuesta:
+      'Dirígete a la sección “Deudas”, haz clic en el botón “Ver” y luego en “Sí, pagar”.',
+  },
+  {
+    pregunta: "¿Puedo editar los datos de un proveedor?",
+    respuesta:
+      'Sí, ve a la sección “Proveedores”, selecciona uno y haz clic en “Editar”.',
+  },
+  {
+    pregunta: "¿Qué pasa si olvido mi contraseña?",
+    respuesta:
+      'Por ahora, debes contactar al administrador del sistema para restablecerla.',
+  },
+];
 
 const Ajustes = () => {
   const navigate = useNavigate();
+  const [activa, setActiva] = useState(null);
+
+  const toggle = (index) => {
+    setActiva(index === activa ? null : index);
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("usuario"); // Elimina al usuario guardado
-    navigate("/login"); // Redirige a la página de login
+    localStorage.removeItem("usuario");
+    navigate("/login");
   };
 
   return (
@@ -20,6 +64,31 @@ const Ajustes = () => {
           <li>Teléfono: +51 987 654 321</li>
           <li>Horario: Lunes a Viernes, 9am - 6pm</li>
         </ul>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">Preguntas Frecuentes</h2>
+
+        <div className="space-y-3">
+          {faqs.map((item, index) => (
+            <div
+              key={index}
+              className="border border-gray-300 rounded shadow-sm"
+            >
+              <button
+                onClick={() => toggle(index)}
+                className="w-full text-left px-4 py-3 bg-gray-100 hover:bg-gray-200 font-medium"
+              >
+                {item.pregunta}
+              </button>
+              {activa === index && (
+                <div className="px-4 py-3 text-gray-700 bg-white">
+                  {item.respuesta}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
 
       <section>
