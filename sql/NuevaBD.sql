@@ -94,6 +94,7 @@ CREATE TABLE Auditoria (
 CREATE TABLE EntradaProducto (
   id_entrada INT AUTO_INCREMENT PRIMARY KEY,
   numero_factura VARCHAR(50) NOT NULL, -- Campo extra para número de factura
+   ruc_emisor VARCHAR(11),
   fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
   esta_cancelado BOOLEAN DEFAULT TRUE,
   monto_pagado DECIMAL(10,2) DEFAULT 0 NOT NULL,
@@ -133,7 +134,7 @@ CREATE OR REPLACE VIEW VistaDeudas AS
 SELECT 
   ep.id_entrada,
   p.nombre_producto,
-  pr.ruc AS ruc_proveedor,
+  ep.ruc_emisor AS ruc_proveedor,
 ep.numero_factura,              -- Agregado aquí
 
   SUM(dep.monto_total) AS monto_total,       -- Sumamos monto_total de los detalles
@@ -145,11 +146,10 @@ ep.numero_factura,              -- Agregado aquí
 FROM EntradaProducto ep
 JOIN DetalleEntradaProducto dep ON ep.id_entrada = dep.id_entrada
 JOIN Producto p ON dep.id_producto = p.id_producto
-JOIN Proveedor pr ON p.id_proveedor = pr.id_proveedor
 GROUP BY
   ep.id_entrada,
   p.nombre_producto,
-  pr.ruc,
+  ep.ruc_emisor,
   ep.monto_pagado,
   ep.monto_pendiente,
   ep.esta_cancelado,

@@ -9,6 +9,8 @@ const Entrada = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState(null);
   const [detalleEntrada, setDetalleEntrada] = useState(null); // nuevo estado
+  const [rucTipo, setRucTipo] = useState("");
+  const [errorRuc, setErrorRuc] = useState("");
 
 
   const verDetallesFactura = (id_entrada) => {
@@ -32,13 +34,16 @@ const Entrada = () => {
     },
   ]);
 
-  const [datosFactura, setDatosFactura] = useState({
-    numero_factura: "",
-    tipo_pago: "contado",
-    monto_pagado: "",
-    fecha_cancelacion: "",
-    usuario_id: null, // inicialmente null hasta que se cargue
-  });
+const [datosFactura, setDatosFactura] = useState({
+  numero_factura: "",
+  tipo_pago: "contado",
+  monto_pagado: "",
+  fecha_cancelacion: "",
+  ruc_emisor: "",
+  razon_social_emisor: "",
+  usuario_id: null,
+});
+
 
   // Cargar usuario_id desde localStorage cuando el componente monta
   useEffect(() => {
@@ -119,19 +124,21 @@ const Entrada = () => {
     );
 
     const datos = {
-      productos: productosConMontos,
-      numero_factura: datosFactura.numero_factura,
-      tipo_pago: datosFactura.tipo_pago,
-      monto_pagado:
-        datosFactura.tipo_pago === "contado"
-          ? montoTotalFactura.toFixed(2)
-          : datosFactura.monto_pagado,
-      fecha_cancelacion:
-        datosFactura.tipo_pago === "credito"
-          ? datosFactura.fecha_cancelacion
-          : null,
-      usuario_id: datosFactura.usuario_id,
-    };
+  productos: productosConMontos,
+  numero_factura: datosFactura.numero_factura,
+  tipo_pago: datosFactura.tipo_pago,
+  monto_pagado:
+    datosFactura.tipo_pago === "contado"
+      ? montoTotalFactura.toFixed(2)
+      : datosFactura.monto_pagado,
+  fecha_cancelacion:
+    datosFactura.tipo_pago === "credito"
+      ? datosFactura.fecha_cancelacion
+      : null,
+  usuario_id: datosFactura.usuario_id,
+  ruc_emisor: datosFactura.ruc_emisor,
+  razon_social_emisor: datosFactura.razon_social_emisor,
+};
 
     fetch("http://localhost:3001/api/entrada-producto", {
       method: "POST",
@@ -289,15 +296,115 @@ const Entrada = () => {
             <h3 className="text-xl font-bold mb-4">Registrar Factura de Entrada</h3>
 
             {/* Input número factura */}
-            <input
-              type="text"
-              placeholder="Número de Factura"
-              className="border px-3 py-2 rounded mb-4 w-full"
-              value={datosFactura.numero_factura}
-              onChange={(e) =>
-                setDatosFactura({ ...datosFactura, numero_factura: e.target.value })
-              }
-            />
+<input
+  type="text"
+  placeholder="Número de Factura (ej: F001-00000000012)"
+  className="border px-3 py-2 rounded mb-4 w-full"
+  value={datosFactura.numero_factura}
+  onChange={(e) => {
+    // Solo permitir caracteres válidos: F, dígitos, guion
+    let val = e.target.value.toUpperCase();
+
+    // Permitir que el usuario escriba libremente, pero bloqueamos caracteres extraños
+    val = val.replace(/[^F0-9-]/g, '');
+
+    // Aseguramos que solo haya un guion
+    const parts = val.split('-');
+    if (parts.length > 2) {
+      val = parts[0] + '-' + parts.slice(1).join('');
+    }
+
+    setDatosFactura({ ...datosFactura, numero_factura: val });
+  }}
+  onBlur={() => {
+    let val = datosFactura.numero_factura.toUpperCase();
+
+    // Dividir en serie y correlativo
+    let [serieRaw, correlativoRaw = ''] = val.split('-');
+
+    // Limpiar y formatear serie: debe ser F + 3 números
+    serieRaw = serieRaw.replace(/[^F0-9]/g, '');
+
+    // Forzar que empiece con F
+    if (!serieRaw.startsWith('F')) {
+      serieRaw = 'F' + serieRaw.replace(/F/g, '');
+    }
+
+    let numerosSerie = serieRaw.slice(1).replace(/\D/g, '').slice(0, 3);
+    numerosSerie = numerosSerie.padStart(3, '0');
+
+    const serieFinal = 'F' + numerosSerie;
+
+    // Limpiar y formatear correlativo: solo números, 11 dígitos
+    correlativoRaw = correlativoRaw.replace(/\D/g, '').slice(0, 11);
+    const correlativoFinal = correlativoRaw.padStart(11, '0');
+
+    setDatosFactura({ ...datosFactura, numero_factura: `${serieFinal}-${correlativoFinal}` });
+  }}
+/>
+
+
+
+
+      {/* Agregar tipo de Ruc del emisor */}
+  <label className="block mt-4 font-semibold">Tipo de RUC</label>
+      <select
+        className="border px-3 py-2 rounded w-full mt-1"
+        value={rucTipo}
+        onChange={(e) => {
+          const tipo = e.target.value;
+          let nuevoRuc = datosFactura.ruc_emisor || "";
+
+          if (tipo === "natural") {
+            if (!nuevoRuc.startsWith("10")) {
+              nuevoRuc = "10" + (nuevoRuc.length > 2 ? nuevoRuc.slice(2) : "");
+            }
+          } else if (tipo === "empresa") {
+            if (!nuevoRuc.startsWith("20")) {
+              nuevoRuc = "20" + (nuevoRuc.length > 2 ? nuevoRuc.slice(2) : "");
+            }
+          } else {
+            nuevoRuc = "";
+          }
+
+          setRucTipo(tipo);
+          setDatosFactura({ ...datosFactura, ruc_emisor: nuevoRuc });
+          setErrorRuc(""); // reset error al cambiar tipo
+        }}
+      >
+        <option value="">-- Selecciona tipo de RUC --</option>
+        <option value="natural">Persona Natural (10)</option>
+        <option value="empresa">Empresa (20)</option>
+      </select>
+
+      <input
+        type="text"
+        placeholder="RUC del Emisor"
+        className="border px-3 py-2 rounded w-full mt-2"
+        value={datosFactura.ruc_emisor}
+        onChange={(e) => {
+          let val = e.target.value.replace(/\D/g, ""); // solo números
+
+          // Forzar prefijo según tipo seleccionado
+          if (rucTipo === "natural") {
+            if (!val.startsWith("10")) val = "10" + val.slice(2);
+          } else if (rucTipo === "empresa") {
+            if (!val.startsWith("20")) val = "20" + val.slice(2);
+          }
+
+          if (val.length > 11) {
+            setErrorRuc("El RUC no puede tener más de 11 dígitos.");
+            val = val.slice(0, 11); // cortar a máximo 11 dígitos
+          } else {
+            setErrorRuc("");
+          }
+
+          setDatosFactura({ ...datosFactura, ruc_emisor: val });
+        }}
+        maxLength={11}
+      />
+      {errorRuc && <p className="text-red-600 mt-1">{errorRuc}</p>}
+            
 
             {productosEntrada.map((p, i) => (
               <div

@@ -13,7 +13,9 @@ const registrarEntradaProducto = async (req, res) => {
       monto_pagado,
       fecha_cancelacion,
       usuario_id,
-      observaciones
+      observaciones,
+     ruc_emisor 
+
     } = req.body;
 
     let esta_cancelado = true;
@@ -48,20 +50,21 @@ const registrarEntradaProducto = async (req, res) => {
 
     // 1. Insertar en EntradaProducto
     const [entradaResult] = await connection.query(`
-      INSERT INTO EntradaProducto (
-        numero_factura, esta_cancelado, monto_pagado, monto_pendiente,
-        fecha_cancelacion, fecha_pago, usuario_id, observaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      numero_factura,
-      esta_cancelado,
-      monto_pagado,
-      monto_pendiente,
-      fecha_cancelacion || null,
-      fecha_pago,
-      usuario_id,
-      observaciones || null
-    ]);
+  INSERT INTO EntradaProducto (
+    numero_factura, ruc_emisor, esta_cancelado, monto_pagado, monto_pendiente,
+    fecha_cancelacion, fecha_pago, usuario_id, observaciones
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`, [
+  numero_factura,
+  ruc_emisor || null,
+  esta_cancelado,
+  monto_pagado,
+  monto_pendiente,
+  fecha_cancelacion || null,
+  fecha_pago,
+  usuario_id,
+  observaciones || null
+]);
 
     const id_entrada = entradaResult.insertId;
 
