@@ -74,10 +74,10 @@ const login = async (req, res) => {
       {
         id_usuario: usuario.id_usuario,
         es_admin: usuario.es_admin,
-        nombre_completo: usuario.nombre_completo, // ← útil para auditoría
+        nombre_completo: usuario.nombre_completo,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '48h' }
     );
 
     res.json({

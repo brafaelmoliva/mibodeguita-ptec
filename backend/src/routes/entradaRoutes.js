@@ -9,7 +9,7 @@ const {
 router.post('/', registrarEntradaProducto);
 router.get('/', obtenerEntradasProducto);
 router.get('/', obtenerEntradasProducto);
-router.get('/:id', obtenerEntradaPorId); // ✅ CORRECTO
+router.get('/:id', obtenerEntradaPorId); 
 
 
 module.exports = router;
