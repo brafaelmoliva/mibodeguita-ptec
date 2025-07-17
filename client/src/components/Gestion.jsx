@@ -241,60 +241,58 @@ const handleActualizar = () => {
       {error && <p className="text-red-500 mb-4">Error: {error}</p>}
 
       <table className="w-full border mt-4 text-left">
-        <thead className="bg-green-100">
-          <tr>
-            <th className="p-2">Nombre</th>
-            <th className="p-2">Descripción</th>
-            <th className="p-2">Stock</th>
-            <th className="p-2">Precio</th>
-            <th className="p-2">Unidad de Medida</th>
-            <th className="p-2">Costo Compra</th>
-            <th className="p-2">Precio Venta</th>
-            <th className="p-2">Categoría</th>
-            <th className="p-2">Proveedor</th>
-            <th className="p-2">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {productos.length === 0 ? (
-            <tr>
-              <td colSpan="10" className="text-center py-4 text-gray-500">
-                No hay productos
-              </td>
-            </tr>
-          ) : (
-            productosPaginados.map((prod) => (
-              <tr
-                key={prod.id_producto}
-                className={
-                  prod.estado === 0 ? "bg-red-500 text-white font-semibold" : ""
-                }
-              >
-                <td className="p-2">{prod.nombre_producto}</td>
-                <td className="p-2">{prod.descripcion_producto}</td>
-                <td className="p-2">{prod.stock}</td>
-                <td className="p-2">{prod.precio}</td>
-                <td className="p-2">{prod.unidad_medida}</td>
-                <td className="p-2">{prod.costo_compra}</td>
-                <td className="p-2">{prod.precio_venta}</td>
-                <td className="p-2">{prod.nombre_categoria}</td>
-                <td className="p-2">{prod.nombre_proveedor}</td>
-                <td className="p-2">
-                  <button
-                    className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                    onClick={() => {
-                      setProductoEdit(prod);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    Editar
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+  <thead className="bg-green-100">
+    <tr>
+      <th className="p-2">Nombre</th>
+      <th className="p-2">Descripción</th>
+      <th className="p-2">Stock</th>
+      <th className="p-2">Unidad de Medida</th>
+      <th className="p-2">Costo Compra</th>
+      <th className="p-2">Precio Venta</th>
+      <th className="p-2">Categoría</th>
+      <th className="p-2">Proveedor</th>
+      <th className="p-2">Acción</th>
+    </tr>
+  </thead>
+  <tbody>
+    {productos.length === 0 ? (
+      <tr>
+        <td colSpan="10" className="text-center py-4 text-gray-500">
+          No hay productos
+        </td>
+      </tr>
+    ) : (
+      productosPaginados.map((prod) => (
+        <tr
+          key={prod.id_producto}
+          className={prod.estado === 0 ? "bg-red-500 text-white font-semibold" : ""}
+        >
+          <td className="p-2">{prod.nombre_producto}</td>
+          <td className="p-2">{prod.descripcion_producto}</td>
+          <td className="p-2">{prod.stock}</td>
+          <td className="p-2">{prod.unidad_medida}</td>
+          <td className="p-2">{prod.costo_compra}</td>
+          <td className="p-2">{prod.precio_venta}</td>
+          <td className="p-2">{prod.nombre_categoria}</td>
+          <td className="p-2">{prod.nombre_proveedor}</td>
+          <td className="p-2">
+            <button
+              className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+              onClick={() => {
+                setProductoEdit(prod);
+                setShowEditModal(true);
+              }}
+            >
+              Editar
+            </button>
+          </td>
+        </tr>
+      ))
+    )}
+  </tbody>
+</table>
+
+
 
       <div className="flex justify-center items-center gap-2 mt-4">
         <button
