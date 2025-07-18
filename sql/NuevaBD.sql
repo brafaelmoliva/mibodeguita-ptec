@@ -33,11 +33,14 @@ CREATE TABLE Proveedor (
 CREATE TABLE Usuario (
   id_usuario INT AUTO_INCREMENT PRIMARY KEY,
   nombre_completo VARCHAR(100),
+  dni CHAR(8) NULL,
   correo VARCHAR(100) NOT NULL UNIQUE,
   contraseña VARCHAR(255) NOT NULL,
   es_admin BOOLEAN DEFAULT FALSE,
   puede_eliminar BOOLEAN DEFAULT FALSE,
-  estado BIT DEFAULT 1
+  estado BIT DEFAULT 1,
+  codigo_verificacion VARCHAR(10),
+ verificado BOOLEAN DEFAULT FALSE,
 );
 
 
@@ -94,7 +97,7 @@ CREATE TABLE Auditoria (
 CREATE TABLE EntradaProducto (
   id_entrada INT AUTO_INCREMENT PRIMARY KEY,
   numero_factura VARCHAR(50) NOT NULL, -- Campo extra para número de factura
-   ruc_emisor VARCHAR(11),
+ruc_emisor VARCHAR(11),
   fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
   esta_cancelado BOOLEAN DEFAULT TRUE,
   monto_pagado DECIMAL(10,2) DEFAULT 0 NOT NULL,
@@ -125,7 +128,11 @@ CREATE TABLE DetalleEntradaProducto (
   FOREIGN KEY (id_producto) REFERENCES Producto(id_producto)
 );
 
-
+CREATE TABLE CodigosVerificacion (
+  correo VARCHAR(255) PRIMARY KEY,
+  codigo VARCHAR(10) NOT NULL,
+  creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ESTA VISTA ES PARA MOSTRAR LAS DEUDAS PENDIENTES
 
