@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const token = localStorage.getItem("token");
 
@@ -14,7 +15,7 @@ const Entrada = () => {
   const [proveedores, setProveedores] = useState([]);
 
   const verDetallesFactura = (id_entrada) => {
-    fetch(`http://localhost:3001/api/entrada-producto/${id_entrada}`)
+fetch(`${API_URL}/api/entrada-producto/${id_entrada}`)
       .then((res) => res.json())
       .then(setDetalleEntrada)
       .catch(() => setError("Error al obtener detalles de factura"));
@@ -55,19 +56,19 @@ const Entrada = () => {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/proveedores")
+fetch(`${API_URL}/api/proveedores`)
       .then((res) => res.json())
       .then(setProveedores)
       .catch(() => setError("Error al obtener proveedores"));
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/productos")
+fetch(`${API_URL}/api/productos`)
       .then((res) => res.json())
       .then(setProductos)
       .catch(() => setError("Error al obtener productos"));
 
-    fetch("http://localhost:3001/api/entrada-producto")
+fetch(`${API_URL}/api/entrada-producto`)
       .then((res) => res.json())
       .then(setEntradas)
       .catch(() => setError("Error al obtener entradas"));
@@ -146,14 +147,15 @@ const Entrada = () => {
       razon_social_emisor: datosFactura.razon_social_emisor,
     };
 
-    fetch("http://localhost:3001/api/entrada-producto", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(datos),
-    })
+    fetch(`${API_URL}/api/entrada-producto`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify(datos),
+})
+
       .then((res) => {
         if (!res.ok) throw new Error("Error al registrar entrada");
         return res.json();
@@ -182,7 +184,7 @@ const Entrada = () => {
           usuario_id: datosFactura.usuario_id, // conservar usuario_id actual
         });
         // Refrescar entradas
-        fetch("http://localhost:3001/api/entrada-producto")
+fetch(`${API_URL}/api/entrada-producto`)
           .then((res) => res.json())
           .then(setEntradas)
           .catch(() => setError("Error al obtener entradas"));

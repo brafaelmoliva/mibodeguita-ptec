@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 const token = localStorage.getItem("token");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const Gestion = () => {
   const [productos, setProductos] = useState([]);
@@ -32,12 +33,14 @@ const Gestion = () => {
   });
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/categorias")
+    fetch(`${API_URL}/api/categorias`)
+
       .then((res) => res.json())
       .then(setCategorias)
       .catch(() => setError("Error al cargar categorías"));
 
-    fetch("http://localhost:3001/api/proveedores")
+    fetch(`${API_URL}/api/proveedores`)
+
       .then((res) => res.json())
       .then(setProveedores)
       .catch(() => setError("Error al cargar proveedores"));
@@ -52,7 +55,7 @@ const Gestion = () => {
     return;
   }
 
-  fetch("http://localhost:3001/api/productos", {
+  fetch(`${API_URL}/api/productos`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -113,7 +116,7 @@ const handleAgregar = () => {
     precio: Number(nuevoProducto.precio),
   };
 
-  fetch("http://localhost:3001/api/productos", {
+  fetch(`${API_URL}/api/productos`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -184,7 +187,7 @@ const handleActualizar = () => {
     return;
   }
 
-  fetch(`http://localhost:3001/api/productos/${productoEdit.id_producto}`, {
+  fetch(`${API_URL}/api/productos/${productoEdit.id_producto}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

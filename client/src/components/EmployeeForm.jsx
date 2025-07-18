@@ -1,5 +1,6 @@
 import { useState } from "react";
-import EmployeeList from './EmployeeList';
+import EmployeeList from "./EmployeeList";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const EmployeeForm = () => {
   const [nombre_completo, setNombreCompleto] = useState("");
@@ -23,7 +24,7 @@ const EmployeeForm = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/employees/dni/${dni}`, {
+      const response = await fetch(`${API_URL}/api/employees/dni/${dni}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -65,17 +66,19 @@ const EmployeeForm = () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      setError("No tienes permiso para registrar empleados. Inicia sesión como administrador.");
+      setError(
+        "No tienes permiso para registrar empleados. Inicia sesión como administrador."
+      );
       setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/employees", {
+      const response = await fetch(`${API_URL}/api/employees`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           nombre_completo,
@@ -115,7 +118,9 @@ const EmployeeForm = () => {
     <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow space-y-10">
       {/* Formulario */}
       <div className="max-w-md mx-auto">
-        <h2 className="text-2xl font-bold mb-4 text-center">Registrar Nuevo Empleado</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          Registrar Nuevo Empleado
+        </h2>
 
         {error && <p className="text-red-600 mb-4">{error}</p>}
         {success && <p className="text-green-600 mb-4">{success}</p>}

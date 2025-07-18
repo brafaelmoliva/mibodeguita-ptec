@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const Categorias = () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -6,23 +7,26 @@ const Categorias = () => {
   const token = localStorage.getItem("token");
 
   const [categorias, setCategorias] = useState([]);
-  const [nuevo, setNuevo] = useState({ nombre_categoria: "", descripcion_categoria: "" });
+  const [nuevo, setNuevo] = useState({
+    nombre_categoria: "",
+    descripcion_categoria: "",
+  });
   const [editar, setEditar] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchCategorias = () => {
-    fetch("http://localhost:3001/api/categorias")
-      .then(res => {
+    fetch(`${API_URL}/api/categorias`)
+      .then((res) => {
         if (!res.ok) throw new Error("Error al cargar categorías");
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         console.log("📦 Categorías recibidas del backend:", data);
         setCategorias(data);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("❌ Error al obtener categorías:", err);
         setError(err.message);
       });
@@ -40,15 +44,15 @@ const Categorias = () => {
 
     setError(null);
 
-    fetch("http://localhost:3001/api/categorias", {
+    fetch(`${API_URL}/api/categorias`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ ...nuevo, id_usuario: idUsuario })
+      body: JSON.stringify({ ...nuevo, id_usuario: idUsuario }),
     })
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("Error al agregar categoría");
         return res.text();
       })
@@ -57,19 +61,19 @@ const Categorias = () => {
         setShowAddModal(false);
         setNuevo({ nombre_categoria: "", descripcion_categoria: "" });
       })
-      .catch(err => setError(err.message));
+      .catch((err) => setError(err.message));
   };
 
   const handleActualizar = () => {
-    fetch(`http://localhost:3001/api/categorias/${editar.id_categoria}`, {
+    fetch(`${API_URL}/api/categorias/${editar.id_categoria}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(editar)
+      body: JSON.stringify(editar),
     })
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("Error al actualizar categoría");
         return res.text();
       })
@@ -78,7 +82,7 @@ const Categorias = () => {
         setShowEditModal(false);
         setEditar(null);
       })
-      .catch(err => setError(err.message));
+      .catch((err) => setError(err.message));
   };
 
   return (
@@ -111,11 +115,16 @@ const Categorias = () => {
               </td>
             </tr>
           ) : (
-            categorias.map(cat => (
-              <tr key={cat.id_categoria} className={parseInt(cat.estado) === 0 ? "bg-red-200" : ""}>
+            categorias.map((cat) => (
+              <tr
+                key={cat.id_categoria}
+                className={parseInt(cat.estado) === 0 ? "bg-red-200" : ""}
+              >
                 <td className="p-2">{cat.nombre_categoria}</td>
                 <td className="p-2">{cat.descripcion_categoria}</td>
-                <td className="p-2">{parseInt(cat.estado) === 1 ? "Activo" : "Inactivo"}</td>
+                <td className="p-2">
+                  {parseInt(cat.estado) === 1 ? "Activo" : "Inactivo"}
+                </td>
                 <td className="p-2">
                   <button
                     className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
@@ -143,13 +152,17 @@ const Categorias = () => {
               placeholder="Nombre"
               className="w-full border mb-2 px-3 py-2 rounded"
               value={nuevo.nombre_categoria}
-              onChange={e => setNuevo({ ...nuevo, nombre_categoria: e.target.value })}
+              onChange={(e) =>
+                setNuevo({ ...nuevo, nombre_categoria: e.target.value })
+              }
             />
             <textarea
               placeholder="Descripción"
               className="w-full border mb-4 px-3 py-2 rounded"
               value={nuevo.descripcion_categoria}
-              onChange={e => setNuevo({ ...nuevo, descripcion_categoria: e.target.value })}
+              onChange={(e) =>
+                setNuevo({ ...nuevo, descripcion_categoria: e.target.value })
+              }
             />
             {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
             <div className="flex justify-end gap-2">
@@ -174,12 +187,16 @@ const Categorias = () => {
               type="text"
               value={editar.nombre_categoria}
               className="w-full border mb-2 px-3 py-2 rounded"
-              onChange={e => setEditar({ ...editar, nombre_categoria: e.target.value })}
+              onChange={(e) =>
+                setEditar({ ...editar, nombre_categoria: e.target.value })
+              }
             />
             <textarea
               value={editar.descripcion_categoria}
               className="w-full border mb-4 px-3 py-2 rounded"
-              onChange={e => setEditar({ ...editar, descripcion_categoria: e.target.value })}
+              onChange={(e) =>
+                setEditar({ ...editar, descripcion_categoria: e.target.value })
+              }
             />
 
             <div className="mb-4">

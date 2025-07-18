@@ -3,6 +3,8 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
 const Historial = () => {
   const [historial, setHistorial] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -10,7 +12,7 @@ const Historial = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/api/auditoria")
+      .get(`${API_URL}/api/auditoria`)
       .then((res) => setHistorial(res.data))
       .catch((err) => console.error("Error al obtener historial", err));
   }, []);
@@ -25,7 +27,6 @@ const Historial = () => {
     saveAs(blob, "historial.xlsx");
   };
 
-  // Paginación
   const totalPages = Math.ceil(historial.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const visibleItems = historial.slice(startIndex, startIndex + itemsPerPage);
@@ -86,7 +87,6 @@ const Historial = () => {
         </table>
       </div>
 
-      {/* Controles de paginación */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-4">
           <button

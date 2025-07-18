@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const EmployeeList = () => {
   const [empleados, setEmpleados] = useState([]);
@@ -13,7 +14,7 @@ const EmployeeList = () => {
 
   const fetchEmpleados = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/employees", {
+      const res = await fetch(`${API_URL}/api/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +41,7 @@ const EmployeeList = () => {
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/employees/${editEmpleadoId}`, {
+     const res = await fetch(`${API_URL}/api/employees/${editEmpleadoId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

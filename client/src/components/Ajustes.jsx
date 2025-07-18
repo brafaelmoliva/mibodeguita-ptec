@@ -20,7 +20,7 @@ const faqs = [
   {
     pregunta: "¿Cómo registro una nueva entrada de producto?",
     respuesta:
-      'Puedes registrar entradas desde la sección "Entradas" haciendo clic en “Nueva Entrada". Recuerda que debes haber registrado un producto antes.',
+      'Puedes registrar entradas desde la sección "Entradas" haciendo clic en “Nueva Entrada". Recuerda que debes haber registrado un producto antes y tambien el proveedor.',
   },
   {
     pregunta: "¿Cómo marco una deuda como pagada?",
@@ -36,6 +36,26 @@ const faqs = [
     pregunta: "¿Qué pasa si olvido mi contraseña?",
     respuesta:
       'Por ahora, debes contactar al administrador del sistema para restablecerla.',
+  },
+   {
+    pregunta: "¿Qué pasa si olvido mi contraseña?",
+    respuesta:
+      'Por ahora, debes contactar al soporte del sistema para restablecerla.',
+  },
+  {
+    pregunta: "¿Como registro un nuevo empleado?",
+    respuesta:
+      'Puedes registrar a un nuevo empleado en la seccion de registrar empleado',
+  },
+   {
+    pregunta: "¿Para que sirve la pestaña historial?",
+    respuesta:
+      'Ver las operaciones que se han hecho en el sistema',
+  },
+    {
+    pregunta: "Ayuda, no veo el dashboard",
+    respuesta:
+      'Asegurate de estar en una cuenta con privilegios de administrador',
   },
 ];
 

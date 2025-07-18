@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import LoginImage from "../../src/assets/login.jpg";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
 
 const Register = () => {
   const [nombreCompleto, setNombreCompleto] = useState("");
@@ -29,7 +31,7 @@ const Register = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/auth/register", {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

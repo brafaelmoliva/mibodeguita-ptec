@@ -3,6 +3,7 @@ import { FiArrowLeft } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import LoginImage from "../../src/assets/login.jpg";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo, contraseña }),

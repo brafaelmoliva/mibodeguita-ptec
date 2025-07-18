@@ -4,28 +4,36 @@ import Gestion from "../components/Gestion";
 import Historial from "../components/Historial";
 import Ajustes from "../components/Ajustes";
 import EmployeeForm from "../components/EmployeeForm";
-import Deudas from "../components/Deudas"; // Importar Deudas
-import Proveedores from "../components/Proveedores"; // Importar Proveedores
+import Deudas from "../components/Deudas"; 
+import Proveedores from "../components/Proveedores"; 
 import Categorias from "../components/Categorias";
 import Entrada from "../components/Entrada";
 
 const Home = () => {
-  const [activePage, setActivePage] = useState("dashboard");
+  const [activePage, setActivePage] = useState("entrada"); // Default para no admin
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
     const usuarioGuardado = JSON.parse(localStorage.getItem("usuario"));
     setUsuario(usuarioGuardado);
+
+    if (usuarioGuardado && usuarioGuardado.es_admin) {
+      setActivePage("dashboard"); // admin empieza en dashboard
+    } else {
+      setActivePage("entrada"); // no admin empieza en entrada (página accesible)
+    }
   }, []);
 
   const renderContent = () => {
     if (
-      (activePage === "dashboard" || activePage === "deudas") &&
+      (activePage === "dashboard" ||
+       activePage === "deudas" ||
+       activePage === "employeeForm" ||
+       activePage === "historial") &&
       usuario &&
       !usuario.es_admin
     ) {
-      // Usuario NO admin quiere ver Dashboard o Deudas → mostrar mensaje de no permiso
       return (
         <div className="text-red-600 font-semibold text-lg">
           No tienes permiso para ver esta pestaña.
@@ -52,7 +60,6 @@ const Home = () => {
         return <Proveedores />;
       case "categorias":
         return <Categorias />;
-
       default:
         return <Dashboard />;
     }
@@ -78,20 +85,20 @@ const Home = () => {
       >
         <h2 className="text-2xl font-bold mb-6">Menú</h2>
         <nav className="flex flex-col gap-4">
-          {/* El botón Dashboard SIEMPRE aparece */}
-          <button
-            onClick={() => {
-              setActivePage("dashboard");
-              setSidebarOpen(false);
-            }}
-            className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "dashboard" ? "bg-green-700" : "hover:bg-green-700"
-            }`}
-          >
-            Dashboard
-          </button>
-
-        
+          {/* Mostrar Dashboard solo si es admin */}
+          {usuario?.es_admin && (
+            <button
+              onClick={() => {
+                setActivePage("dashboard");
+                setSidebarOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded w-full ${
+                activePage === "dashboard" ? "bg-green-700" : "hover:bg-green-700"
+              }`}
+            >
+              Dashboard
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -117,42 +124,44 @@ const Home = () => {
             Gestión
           </button>
 
-          <button
-            onClick={() => {
-              setActivePage("historial");
-              setSidebarOpen(false);
-            }}
-            className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "historial" ? "bg-green-700" : "hover:bg-green-700"
-            }`}
-          >
-            Historial
-          </button>
+          {/* Mostrar Historial solo si es admin */}
+          {usuario?.es_admin && (
+            <button
+              onClick={() => {
+                setActivePage("historial");
+                setSidebarOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded w-full ${
+                activePage === "historial" ? "bg-green-700" : "hover:bg-green-700"
+              }`}
+            >
+              Historial
+            </button>
+          )}
 
-          {/* Mostrar Deudas SOLO si es admin */}
+          {/* Mostrar Deudas solo si es admin */}
+          {usuario?.es_admin && (
+            <button
+              onClick={() => {
+                setActivePage("deudas");
+                setSidebarOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded w-full ${
+                activePage === "deudas" ? "bg-green-700" : "hover:bg-green-700"
+              }`}
+            >
+              Deudas
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setActivePage("deudas");
-              setSidebarOpen(false);
-            }}
-            className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "deudas" ? "bg-green-700" : "hover:bg-green-700"
-            }`}
-          >
-            Deudas
-          </button>
-
-          {/* Proveedores SIEMPRE visible */}
+          {/* Proveedores siempre visible */}
           <button
             onClick={() => {
               setActivePage("proveedores");
               setSidebarOpen(false);
             }}
             className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "proveedores"
-                ? "bg-green-700"
-                : "hover:bg-green-700"
+              activePage === "proveedores" ? "bg-green-700" : "hover:bg-green-700"
             }`}
           >
             Proveedores
@@ -164,27 +173,26 @@ const Home = () => {
               setSidebarOpen(false);
             }}
             className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "categorias"
-                ? "bg-green-700"
-                : "hover:bg-green-700"
+              activePage === "categorias" ? "bg-green-700" : "hover:bg-green-700"
             }`}
           >
             Categorías
           </button>
 
-          <button
-            onClick={() => {
-              setActivePage("employeeForm");
-              setSidebarOpen(false);
-            }}
-            className={`text-left px-3 py-2 rounded w-full ${
-              activePage === "employeeForm"
-                ? "bg-green-700"
-                : "hover:bg-green-700"
-            }`}
-          >
-            Registrar Empleado
-          </button>
+          {/* Mostrar Registrar Empleado solo si es admin */}
+          {usuario?.es_admin && (
+            <button
+              onClick={() => {
+                setActivePage("employeeForm");
+                setSidebarOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded w-full ${
+                activePage === "employeeForm" ? "bg-green-700" : "hover:bg-green-700"
+              }`}
+            >
+              Registrar Empleado
+            </button>
+          )}
 
           <button
             onClick={() => {

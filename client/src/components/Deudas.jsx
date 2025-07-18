@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 const Deudas = () => {
   const [deudas, setDeudas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDeuda, setSelectedDeuda] = useState(null);
-  const [error, setError] = useState('');
-  const [filtro, setFiltro] = useState('todas'); // 'todas', 'pendientes', 'pagadas'
+  const [error, setError] = useState("");
+  const [filtro, setFiltro] = useState("todas"); // 'todas', 'pendientes', 'pagadas'
 
-  const API_URL = 'http://localhost:3001/api/deudas';
+  const API_URL = `${import.meta.env.VITE_API_URL}/api/deudas`;
 
   useEffect(() => {
     fetchDeudas();
@@ -16,14 +16,14 @@ const Deudas = () => {
 
   const fetchDeudas = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const res = await fetch(API_URL, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      if (!res.ok) throw new Error('Error al obtener deudas');
+      if (!res.ok) throw new Error("Error al obtener deudas");
       const data = await res.json();
       setDeudas(data);
     } catch (err) {
@@ -45,16 +45,16 @@ const Deudas = () => {
 
   const confirmarPago = async () => {
     if (!selectedDeuda) return;
-    setError('');
+    setError("");
     try {
       const res = await fetch(`${API_URL}/${selectedDeuda.id_entrada}/pagar`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      if (!res.ok) throw new Error('Error al marcar deuda como pagada');
+      if (!res.ok) throw new Error("Error al marcar deuda como pagada");
       await res.json();
       cerrarModal();
       fetchDeudas();
@@ -65,8 +65,8 @@ const Deudas = () => {
 
   const deudasFiltradas = deudas.filter((d) => {
     const montoPendiente = Number(d.monto_pendiente);
-    if (filtro === 'pendientes') return montoPendiente > 0;
-    if (filtro === 'pagadas') return montoPendiente === 0;
+    if (filtro === "pendientes") return montoPendiente > 0;
+    if (filtro === "pagadas") return montoPendiente === 0;
     return true;
   });
 
@@ -107,59 +107,70 @@ const Deudas = () => {
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300">
-           <thead className="bg-green-800 text-white">
-  <tr>
-    <th className="px-4 py-2 border border-gray-300">Fecha</th>
-    <th className="px-4 py-2 border border-gray-300">Código</th>
-    <th className="px-4 py-2 border border-gray-300">Número de factura</th> {/* Nueva columna */}
-    <th className="px-4 py-2 border border-gray-300">Proveedor (RUC)</th>
-    <th className="px-4 py-2 border border-gray-300">Monto</th>
-    <th className="px-4 py-2 border border-gray-300">Estado</th>
-    <th className="px-4 py-2 border border-gray-300">Acciones</th>
-  </tr>
-</thead>
-<tbody>
-  {deudasFiltradas.length === 0 ? (
-    <tr>
-      <td colSpan="7" className="text-center py-4 text-gray-500">
-        No hay datos disponibles.
-      </td>
-    </tr>
-  ) : (
-    deudasFiltradas.map((deuda) => {
-      const fecha = deuda.fecha_cancelacion
-        ? new Date(deuda.fecha_cancelacion).toLocaleDateString()
-        : '—';
-      const montoPendiente = Number(deuda.monto_pendiente) || 0;
+            <thead className="bg-green-800 text-white">
+              <tr>
+                <th className="px-4 py-2 border border-gray-300">Fecha</th>
+                <th className="px-4 py-2 border border-gray-300">Código</th>
+                <th className="px-4 py-2 border border-gray-300">
+                  Número de factura
+                </th>{" "}
+                {/* Nueva columna */}
+                <th className="px-4 py-2 border border-gray-300">
+                  Proveedor (RUC)
+                </th>
+                <th className="px-4 py-2 border border-gray-300">Monto</th>
+                <th className="px-4 py-2 border border-gray-300">Estado</th>
+                <th className="px-4 py-2 border border-gray-300">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deudasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-4 text-gray-500">
+                    No hay datos disponibles.
+                  </td>
+                </tr>
+              ) : (
+                deudasFiltradas.map((deuda) => {
+                  const fecha = deuda.fecha_cancelacion
+                    ? new Date(deuda.fecha_cancelacion).toLocaleDateString()
+                    : "—";
+                  const montoPendiente = Number(deuda.monto_pendiente) || 0;
 
-      return (
-        <tr key={deuda.id_entrada}>
-          <td className="border px-4 py-2">{fecha}</td>
-          <td className="border px-4 py-2">{deuda.id_entrada}</td>
-          <td className="border px-4 py-2">{deuda.numero_factura || '—'}</td> {/* Aquí */}
-          <td className="border px-4 py-2">{deuda.ruc_proveedor}</td>
-          <td className="border px-4 py-2">{montoPendiente.toFixed(2)}</td>
-          <td className="border px-4 py-2">
-            {montoPendiente > 0 ? 'Pendiente' : 'Pagada'}
-          </td>
-          <td className="border px-4 py-2">
-            {montoPendiente > 0 ? (
-              <button
-                onClick={() => abrirModal(deuda)}
-                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Ver
-              </button>
-            ) : (
-              <span className="text-gray-400">—</span>
-            )}
-          </td>
-        </tr>
-      );
-    })
-  )}
-</tbody>
-
+                  return (
+                    <tr key={deuda.id_entrada}>
+                      <td className="border px-4 py-2">{fecha}</td>
+                      <td className="border px-4 py-2">{deuda.id_entrada}</td>
+                      <td className="border px-4 py-2">
+                        {deuda.numero_factura || "—"}
+                      </td>{" "}
+                      {/* Aquí */}
+                      <td className="border px-4 py-2">
+                        {deuda.ruc_proveedor}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {montoPendiente.toFixed(2)}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {montoPendiente > 0 ? "Pendiente" : "Pagada"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {montoPendiente > 0 ? (
+                          <button
+                            onClick={() => abrirModal(deuda)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Ver
+                          </button>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
           </table>
         </div>
       )}
@@ -169,7 +180,7 @@ const Deudas = () => {
           <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
             <h2 className="text-xl font-semibold mb-4">Confirmar pago</h2>
             <p className="mb-4">
-              ¿Ya pagaste la deuda del código{' '}
+              ¿Ya pagaste la deuda del código{" "}
               <strong>{selectedDeuda.id_entrada}</strong>?
             </p>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const Proveedores = () => {
   const [proveedores, setProveedores] = useState([]);
@@ -22,7 +23,7 @@ const Proveedores = () => {
   const [selectedProveedor, setSelectedProveedor] = useState(null);
 
   const fetchProveedores = () => {
-    fetch("http://localhost:3001/api/proveedores")
+fetch(`${API_URL}/api/proveedores`)
       .then((res) => {
         if (!res.ok) throw new Error("Error al obtener proveedores");
         return res.json();
@@ -43,7 +44,7 @@ const Proveedores = () => {
 
     setError(null);
 
-    fetch("http://localhost:3001/api/proveedores", {
+    fetch(`${API_URL}/api/proveedores`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -75,8 +76,7 @@ const Proveedores = () => {
   };
 
   const handleActualizar = () => {
-    fetch(
-      `http://localhost:3001/api/proveedores/${selectedProveedor.id_proveedor}`,
+    fetch(`${API_URL}/api/proveedores/${selectedProveedor.id_proveedor}`,
       {
         method: "PUT",
         headers: {
@@ -104,7 +104,7 @@ const Proveedores = () => {
       return;
     }
 
-    fetch(`http://localhost:3001/api/proveedores/ruc/${ruc}`)
+    fetch(`${API_URL}/api/proveedores/ruc/${ruc}`)
       .then((res) => {
         if (!res.ok) throw new Error("RUC no encontrado");
         return res.json();
